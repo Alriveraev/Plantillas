@@ -63,11 +63,8 @@ export const PrivateLayout = () => {
       <SidebarInset className="bg-stone-50/50 dark:bg-zinc-900 transition-colors">
         <header
           className={cn(
-            "h-16 sticky top-0 z-50 flex shrink-0 items-center gap-2 border-b transition-[width,height,background-color] ease-linear md:rounded-tl-xl md:rounded-tr-xl",
-            // Ajustamos el header para que sea traslúcido pero legible
-            isScrolled 
-                ? "bg-background/80 backdrop-blur-md shadow-sm" 
-                : "bg-transparent"
+            "h-16 bg-background/40 sticky top-0 z-50 flex shrink-0 items-center gap-2 border-b backdrop-blur-md transition-[width,height] ease-linear md:rounded-tl-xl md:rounded-tr-xl",
+            !isScrolled && "rounded-t-xl"
           )}
         >
           <div className="flex w-full items-center gap-1 px-4 lg:gap-2">
@@ -92,11 +89,11 @@ export const PrivateLayout = () => {
                           </BreadcrumbPage>
                         ) : (
                           <BreadcrumbLink asChild>
-                            <Link 
-                                to={crumb.path}
-                                className="hover:text-teal-600 transition-colors"
+                            <Link
+                              to={crumb.path}
+                              className="hover:text-teal-600 transition-colors"
                             >
-                                {crumb.title}
+                              {crumb.title}
                             </Link>
                           </BreadcrumbLink>
                         )}
