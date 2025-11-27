@@ -3,12 +3,10 @@ import { z } from "zod";
 export const loginSchema = z.object({
   email: z
     .string()
-    .email({ message: "El correo electronico no es valido" })
-    .min(1, { message: "El correo electronico es requerido" }),
-  password: z
-    .string()
-    .min(1, "La contraseña es requerida")
-    .max(8, "La contraseña debe tener como máximo 8 caracteres"),
+    .trim()
+    .email({ message: "El formato del correo no es válido" })
+    .min(1, { message: "El correo electrónico es requerido" }),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   rememberMe: z.boolean().optional(),
 });
 

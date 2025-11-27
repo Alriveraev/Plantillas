@@ -1,12 +1,14 @@
 import { useFormik } from "formik";
 import { toFormikValidationSchema } from "@/shared/utils/formik-zod";
+import { Loader2 } from "lucide-react";
 import { registerSchema } from "../schemas";
-import type{ RegisterFormData } from "../schemas";
-
+import type { RegisterFormData } from "../schemas";
 import { useRegister } from "../hooks";
+
+// UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldSeparator } from "@/components/ui/field";
 import {
   Card,
   CardContent,
@@ -15,6 +17,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FormError } from "@/shared/components/forms";
+import { PasswordInput } from "@/components/password-input";
+import { GoogleButton } from "./SocialButton"; // Reutilizamos el botón del Login
 
 export const RegisterForm = () => {
   const { mutate: register, isPending } = useRegister();
@@ -26,71 +30,110 @@ export const RegisterForm = () => {
       password: "",
       passwordConfirmation: "",
     },
-    validationSchema: toFormikValidationSchema(registerSchema),
+    validate: toFormikValidationSchema(registerSchema),
+    validateOnBlur: true,
+    validateOnChange: false, // Optimización igual que en Login
     onSubmit: (values) => {
-      register(values);
+      // Saneamiento básico
+      const sanitizedValues = {
+        ...values,
+        email: values.email.trim(),
+      };
+      register(sanitizedValues);
     },
   });
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Crear Cuenta</CardTitle>
-        <CardDescription>
-          Completa el formulario para registrarte
-        </CardDescription>
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl">Crear Cuenta</CardTitle>
+        <CardDescription>Ingresa tus datos para registrarte</CardDescription>
       </CardHeader>
+
       <CardContent>
         <form onSubmit={formik.handleSubmit} className="space-y-4">
+          {/* Botón Social */}
+          <Field>
+            <GoogleButton  />
+          </Field>
+
+          <FieldSeparator className="my-6">
+            O regístrate con tu email
+          </FieldSeparator>
+
+          {/* Nombre Completo */}
           <div className="space-y-2">
-            <Label htmlFor="name">Nombre Completo</Label>
             <Input
               id="name"
+              label="Nombre Completo"
               type="text"
               placeholder="Juan Pérez"
+              autoComplete="name"
+              disabled={isPending}
               {...formik.getFieldProps("name")}
             />
             <FormError name="name" formik={formik} />
           </div>
 
+          {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email">Correo Electrónico</Label>
             <Input
               id="email"
               type="email"
+              label="Correo Electrónico"
               placeholder="correo@ejemplo.com"
+              autoComplete="email"
+              disabled={isPending}
               {...formik.getFieldProps("email")}
             />
             <FormError name="email" formik={formik} />
           </div>
 
+          {/* Contraseña */}
           <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
+              label="Contraseña"
               placeholder="••••••••"
+              autoComplete="new-password"
+              disabled={isPending}
               {...formik.getFieldProps("password")}
             />
             <FormError name="password" formik={formik} />
           </div>
 
+          {/* Confirmar Contraseña */}
           <div className="space-y-2">
-            <Label htmlFor="passwordConfirmation">Confirmar Contraseña</Label>
-            <Input
+            <PasswordInput
               id="passwordConfirmation"
-              type="password"
+              label="Confirmar Contraseña"
               placeholder="••••••••"
+              autoComplete="new-password"
+              disabled={isPending}
               {...formik.getFieldProps("passwordConfirmation")}
             />
             <FormError name="passwordConfirmation" formik={formik} />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? "Creando cuenta..." : "Crear Cuenta"}
+          {/* Botón Submit */}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isPending || !formik.isValid}
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creando cuenta...
+              </>
+            ) : (
+              "Crear Cuenta"
+            )}
           </Button>
         </form>
       </CardContent>
+
+    
     </Card>
   );
 };

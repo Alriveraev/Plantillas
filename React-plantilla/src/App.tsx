@@ -13,7 +13,7 @@ export const App = () => {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
-          <Toaster />
+          <Toaster position="top-right"  />
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </ErrorBoundary>

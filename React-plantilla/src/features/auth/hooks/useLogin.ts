@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { authApi } from "@/api/endpoints";
 import { useAuthStore } from "../store";
 import type { LoginRequest } from "@/api/types";
-import { toast } from "sonner"
+import { toast } from "sonner";
 
 export const useLogin = () => {
   const navigate = useNavigate();
@@ -13,15 +13,11 @@ export const useLogin = () => {
     mutationFn: (credentials: LoginRequest) => authApi.login(credentials),
     onSuccess: (data) => {
       setAuth(data.user, data.token);
-      toast( "¡Bienvenido!",{
-        description: `Hola ${data.user.name}, has iniciado sesión correctamente.`,
-      });
+      toast(`Hola ${data?.user.name}, has iniciado sesión correctamente.`,);
       navigate("/dashboard");
     },
     onError: (error: any) => {
-      toast.error("Error al iniciar sesión", /*  */{
-        description: error.response?.data?.message || "Credenciales inválidas",
-      });
+      toast.error(error.response?.data?.message || "Credenciales inválidas");
     },
   });
 };
