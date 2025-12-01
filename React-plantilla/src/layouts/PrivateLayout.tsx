@@ -31,13 +31,26 @@ export const PrivateLayout = () => {
   const matches = useMatches();
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Efecto para detectar scroll
+  // Efecto para detectar scroll con threshold más suave
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
+      setIsScrolled(window.scrollY > 10);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    
+    // Throttle para mejor performance
+    let ticking = false;
+    const scrollListener = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    window.addEventListener("scroll", scrollListener, { passive: true });
+    return () => window.removeEventListener("scroll", scrollListener);
   }, []);
 
   // Generación de Breadcrumbs
@@ -59,19 +72,27 @@ export const PrivateLayout = () => {
   return (
     <SidebarProvider>
       <AppSidebar />
-      {/* Agregamos el fondo stone-50 para mantener consistencia con el AuthLayout */}
-      <SidebarInset className="bg-stone-50/50 dark:bg-zinc-900 transition-colors">
+      {/* Fondo base del layout */}
+      <SidebarInset className="bg-stone-100/60 dark:bg-stone-950 transition-colors flex flex-col">
         <header
           className={cn(
-            "h-16 bg-background/40 sticky top-0 z-50 flex shrink-0 items-center gap-2 border-b backdrop-blur-md transition-[width,height] ease-linear md:rounded-tl-xl md:rounded-tr-xl",
-            !isScrolled && "rounded-t-xl"
+            "h-16 sticky top-0 z-50 flex shrink-0 items-center gap-2 px-4 border-b",
+            "transition-all duration-300 ease-out",
+            isScrolled
+              ? " bg-background/40 backdrop-blur-md  shadow-sm border-stone-200 dark:bg-stone-900/95 dark:border-stone-800"
+              : "bg-transparent backdrop-blur-none shadow-none border-transparent"
           )}
         >
-          <div className="flex w-full items-center gap-1 px-4 lg:gap-2">
-            <SidebarTrigger className="-ml-1 hover:bg-stone-200/50 dark:hover:bg-zinc-800" />
+          <div className="flex w-full items-center gap-2">
+            <SidebarTrigger className="-ml-1 hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors duration-200" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4 bg-stone-300 dark:bg-zinc-700"
+              className={cn(
+                "mr-2 h-4 transition-colors duration-300",
+                isScrolled 
+                  ? "bg-stone-300 dark:bg-stone-700" 
+                  : "bg-stone-200 dark:bg-stone-800"
+              )}
             />
 
             {/* --- Breadcrumbs --- */}
@@ -84,14 +105,14 @@ export const PrivateLayout = () => {
                     <div key={crumb.path} className="flex items-center">
                       <BreadcrumbItem className="hidden md:block">
                         {isLast ? (
-                          <BreadcrumbPage className="font-medium text-teal-900 dark:text-teal-100">
+                          <BreadcrumbPage className="font-semibold text-teal-900 dark:text-teal-100 transition-colors duration-200">
                             {crumb.title}
                           </BreadcrumbPage>
                         ) : (
                           <BreadcrumbLink asChild>
                             <Link
                               to={crumb.path}
-                              className="hover:text-teal-600 transition-colors"
+                              className="hover:text-teal-600 transition-colors duration-200 text-stone-500 dark:text-stone-400"
                             >
                               {crumb.title}
                             </Link>
@@ -99,7 +120,7 @@ export const PrivateLayout = () => {
                         )}
                       </BreadcrumbItem>
                       {!isLast && (
-                        <BreadcrumbSeparator className="hidden md:block mx-2" />
+                        <BreadcrumbSeparator className="hidden md:block mx-2 text-stone-400 dark:text-stone-600" />
                       )}
                     </div>
                   );
@@ -108,19 +129,24 @@ export const PrivateLayout = () => {
             </Breadcrumb>
             {/* ------------------- */}
 
-            <div className="ml-auto flex items-center gap-2 md:gap-4">
-              <button className="rounded-full p-2 hover:bg-stone-200/50 dark:hover:bg-zinc-800 transition-colors">
-                <Bell className="h-5 w-5 text-muted-foreground hover:text-teal-600" />
+            <div className="ml-auto flex items-center gap-2">
+              <button className="rounded-full p-2 hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-all duration-200 text-stone-500 dark:text-stone-400">
+                <Bell className="h-5 w-5" />
               </button>
               <ModeToggle />
             </div>
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
-          <LazyLoad>
-            <Outlet />
-          </LazyLoad>
+        {/* --- CONTENEDOR PRINCIPAL CON BORDE VISIBLE --- */}
+        <div className="flex-1 p-4 pt-0 overflow-hidden">
+          <div className="h-full rounded-2xl border border-stone-200 bg-white shadow-sm overflow-auto dark:border-stone-800 dark:bg-stone-900 transition-colors duration-200">
+            <div className="p-6 md:p-8 min-h-full">
+              <LazyLoad>
+                <Outlet />
+              </LazyLoad>
+            </div>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>
