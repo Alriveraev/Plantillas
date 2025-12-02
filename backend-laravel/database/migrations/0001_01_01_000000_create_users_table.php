@@ -19,12 +19,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
 
-            // 🔥 AGREGA ESTA LÍNEA QUE FALTABA:
             $table->timestamp('email_verified_at')->nullable();
 
             $table->string('password');
 
-            // RBAC y Seguridad
             $table->foreignUuid('role_id')->nullable()->constrained()->nullOnDelete();
             $table->boolean('is_active')->default(true);
 

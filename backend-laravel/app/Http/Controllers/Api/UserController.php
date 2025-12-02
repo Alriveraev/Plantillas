@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -70,5 +71,21 @@ class UserController extends Controller
         }
 
         return new UserResource($user->load('role'));
+    }
+
+    public function getAvatar(User $user)
+    {
+
+        Gate::authorize('view', $user);
+
+        if (!$user->profile || !$user->profile->avatar_path) {
+            abort(404);
+        }
+
+        if (!Storage::disk('local')->exists($user->profile->avatar_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($user->profile->avatar_path);
     }
 }

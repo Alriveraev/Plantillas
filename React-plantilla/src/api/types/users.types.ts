@@ -1,17 +1,17 @@
-import type { User } from "./auth.types";
+import type { User, UserRole } from "./auth.types";
 
 export interface CreateUserRequest {
   name: string;
   email: string;
   password: string;
-  role: "admin" | "user";
+  role: UserRole; 
 }
 
 export interface UpdateUserRequest {
   name?: string;
   email?: string;
   password?: string;
-  role?: "admin" | "user";
+  role?: UserRole;
 }
 
 export interface UserDetail extends User {

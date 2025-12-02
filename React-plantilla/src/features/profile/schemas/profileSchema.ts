@@ -1,16 +1,24 @@
 import { z } from "zod";
 
 export const profileSchema = z.object({
-  name: z
+  email: z.string().email("Correo inválido").min(1, "El correo es requerido"),
+
+  // Nombres requeridos
+  first_name: z.string().min(2, "Mínimo 2 caracteres"),
+  first_surname: z.string().min(2, "Mínimo 2 caracteres"),
+
+  // Opcionales
+  second_name: z.string().optional().or(z.literal("")),
+  second_surname: z.string().optional().or(z.literal("")),
+  third_name: z.string().optional().or(z.literal("")),
+  third_surname: z.string().optional().or(z.literal("")),
+
+  phone: z
     .string()
-    .trim() // Buena práctica: elimina espacios al inicio/final
-    .min(1, "El nombre es requerido")
-    .min(2, "El nombre debe tener al menos 2 caracteres"),
-  email: z
-    .string()
-    .trim() // Crucial para emails copiados/pegados
-    .min(1, "El correo electrónico es requerido")
-    .email("Debe ser un correo electrónico válido"),
+    .max(20, "Máximo 20 caracteres")
+    .optional()
+    .or(z.literal("")),
+  gender_id: z.string().optional().or(z.literal("")),
 });
 
 export const changePasswordSchema = z

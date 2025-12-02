@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 import { LoginForm } from "../components";
 
 export const LoginPage = () => {
@@ -6,7 +5,7 @@ export const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 w-full">
       <div className="w-full max-w-md space-y-4">
         <LoginForm />
-        <p className="text-center text-sm text-gray-600">
+       {/*  <p className="text-center text-sm text-gray-600">
           ¿No tienes una cuenta?{" "}
           <Link
             to="/register"
@@ -14,7 +13,7 @@ export const LoginPage = () => {
           >
             Regístrate aquí
           </Link>
-        </p>
+        </p> */}
       </div>
     </div>
   );

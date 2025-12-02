@@ -1,4 +1,4 @@
-import { apiClient } from "../client";
+import { api } from "@/api/client/axios.client";
 import type {
   ApiResponse,
   PaginatedResponse,
@@ -12,7 +12,7 @@ export const usersApi = {
   getAll: async (
     params?: QueryParams
   ): Promise<PaginatedResponse<UserDetail>> => {
-    const { data } = await apiClient.get<
+    const { data } = await api.get<
       ApiResponse<PaginatedResponse<UserDetail>>
     >("/users", {
       params,
@@ -21,14 +21,14 @@ export const usersApi = {
   },
 
   getById: async (id: string): Promise<UserDetail> => {
-    const { data } = await apiClient.get<ApiResponse<UserDetail>>(
+    const { data } = await api.get<ApiResponse<UserDetail>>(
       `/users/${id}`
     );
     return data.data;
   },
 
   create: async (userData: CreateUserRequest): Promise<UserDetail> => {
-    const { data } = await apiClient.post<ApiResponse<UserDetail>>(
+    const { data } = await api.post<ApiResponse<UserDetail>>(
       "/users",
       userData
     );
@@ -39,7 +39,7 @@ export const usersApi = {
     id: string,
     userData: UpdateUserRequest
   ): Promise<UserDetail> => {
-    const { data } = await apiClient.patch<ApiResponse<UserDetail>>(
+    const { data } = await api.patch<ApiResponse<UserDetail>>(
       `/users/${id}`,
       userData
     );
@@ -47,6 +47,6 @@ export const usersApi = {
   },
 
   delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`/users/${id}`);
+    await api.delete(`/users/${id}`);
   },
 };

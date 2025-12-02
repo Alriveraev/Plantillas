@@ -8,7 +8,7 @@ import {
   LifeBuoy,
   Send,
   SquareTerminal,
-  PawPrint, // Importamos el icono de la marca
+  PawPrint,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,7 +56,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     [hasRole, hasPermission]
   );
 
-  // 2. Transformación de Rutas
   const navItems = React.useMemo(() => {
     return privateRoutes
       .filter((route) => isRouteVisible(route.handle as RouteHandle))
@@ -66,7 +65,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           ? ICON_MAP[handle.icon] || SquareTerminal
           : SquareTerminal;
 
-        // Submenús
         const subItems = route.children
           ?.filter((child) => isRouteVisible(child.handle as RouteHandle))
           .map((child) => {
@@ -92,18 +90,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items: subItems && subItems.length > 0 ? subItems : undefined,
         };
       });
-  }, [user, location.pathname, isRouteVisible]);
+  }, [location.pathname, isRouteVisible]);
 
   const navSecondary = [
     { title: "Soporte", url: "#", icon: LifeBuoy },
     { title: "Feedback", url: "#", icon: Send },
   ];
-
-  const userData = {
-    name: user?.name || "Usuario",
-    email: user?.email || "usuario@demo.com",
-    avatar: user?.avatar || "",
-  };
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
@@ -136,7 +128,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={userData} />
+        {/* Pasamos el objeto user real al componente NavUser. Validamos que user exista. */}
+        {user && <NavUser user={user} />}
       </SidebarFooter>
     </Sidebar>
   );

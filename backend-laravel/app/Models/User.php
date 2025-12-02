@@ -13,13 +13,21 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, HasUuids;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role_id', 'is_active',
-        'google2fa_secret', 'two_factor_confirmed_at',
-        'last_login_at', 'last_ip'
+        'name',
+        'email',
+        'password',
+        'role_id',
+        'is_active',
+        'google2fa_secret',
+        'two_factor_confirmed_at',
+        'last_login_at',
+        'last_ip'
     ];
 
     protected $hidden = [
-        'password', 'remember_token', 'google2fa_secret',
+        'password',
+        'remember_token',
+        'google2fa_secret',
     ];
 
     protected function casts(): array
@@ -37,6 +45,11 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
+    }
+
     // Helper: Verifica si el usuario tiene el 2FA completamente activado
     public function hasEnabledTwoFactorAuthentication(): bool
     {
@@ -47,5 +60,16 @@ class User extends Authenticatable
     public function hasPermission(string $permissionKey): bool
     {
         return $this->role?->permissions->contains('key', $permissionKey) ?? false;
+    }
+
+
+    protected static function booted()
+    {
+        static::created(function ($user) {
+            $user->profile()->create([
+                'first_name' => $user->name, // Fallback inicial
+                'first_surname' => '',
+            ]);
+        });
     }
 }

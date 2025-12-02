@@ -1,88 +1,76 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import type { User } from "@/api/types";
-import { APP_CONSTANTS } from "@/config/constants";
-
-// Definimos los posibles estados de autenticación
-type AuthStatus = "checking" | "authenticated" | "unauthenticated";
-
+import { authService } from "../services/auth.service";
+export type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 interface AuthState {
   user: User | null;
-  token: string | null;
-  status: AuthStatus; // Reemplazamos el boolean simple por un estado más descriptivo
-  isAuthenticated: boolean; // Mantenemos este por conveniencia (derivado)
+  status: AuthStatus;
+  isAuthenticated: boolean;
 
-  // Acciones
-  setAuth: (user: User, token: string) => void;
+  setAuth: (user: User) => void;
   clearAuth: () => void;
   updateUser: (user: Partial<User>) => void;
-  checkAuthStatus: () => void; // Nueva acción para validar al inicio
+  checkAuthStatus: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
+const SESSION_FLAG_KEY = "auth_session_active";
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  status: "checking",
+  isAuthenticated: false,
+
+  setAuth: (user) => {
+    localStorage.setItem(SESSION_FLAG_KEY, "true");
+    set({
+      user,
+      status: "authenticated",
+      isAuthenticated: true,
+    });
+  },
+
+  clearAuth: () => {
+    localStorage.removeItem(SESSION_FLAG_KEY);
+    set({
       user: null,
-      token: null,
-      status: "checking", // ⚠️ Importante: Empezamos en "checking"
+      status: "unauthenticated",
       isAuthenticated: false,
+    });
+  },
 
-      setAuth: (user, token) => {
-        // No necesitamos localStorage.setItem manual, 'persist' lo hace
-        set({
-          user,
-          token,
-          status: "authenticated",
-          isAuthenticated: true,
-        });
-      },
+  updateUser: (userData) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userData } : null,
+    })),
 
-      clearAuth: () => {
-        // No necesitamos localStorage.removeItem manual
-        set({
-          user: null,
-          token: null,
-          status: "unauthenticated",
-          isAuthenticated: false,
-        });
-      },
+  checkAuthStatus: async () => {
+    const hasSessionFlag = localStorage.getItem(SESSION_FLAG_KEY) === "true";
 
-      updateUser: (userData) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...userData } : null,
-        })),
-
-      // Acción opcional para verificar token al montar la app
-      // Útil si quieres validar contra el backend que el token no expiró
-      checkAuthStatus: () => {
-        const { token } = get();
-        if (token) {
-          // Aquí podrías agregar lógica extra, por ahora asumimos que si hay token, es válido
-          set({ status: "authenticated", isAuthenticated: true });
-        } else {
-          set({ status: "unauthenticated", isAuthenticated: false });
-        }
-      },
-    }),
-    {
-      name: APP_CONSTANTS.USER_KEY, // Nombre de la key en localStorage
-      storage: createJSONStorage(() => localStorage),
-      // onRehydrateStorage es un ciclo de vida útil de persist
-      onRehydrateStorage: () => (state) => {
-        // Cuando Zustand termina de leer localStorage, ejecutamos esto:
-        if (state?.token) {
-          state.status = "authenticated";
-          state.isAuthenticated = true;
-        } else {
-          state.status = "unauthenticated";
-          state.isAuthenticated = false;
-        }
-      },
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        // No persistimos 'status' ni 'isAuthenticated', queremos recalcularlos al recargar
-      }),
+    if (!hasSessionFlag) {
+      set({
+        user: null,
+        status: "unauthenticated",
+        isAuthenticated: false,
+      });
+      return;
     }
-  )
-);
+
+    try {
+      set({ status: "checking" });
+
+      const response = await authService.getMe();
+
+      const responseData = response as User | { data: User };
+
+      const user = "data" in responseData ? responseData.data : responseData;
+
+      set({
+        user,
+        status: "authenticated",
+        isAuthenticated: true,
+      });
+    } catch {
+      get().clearAuth();
+    }
+  },
+}));

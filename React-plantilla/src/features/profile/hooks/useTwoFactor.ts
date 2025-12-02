@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/api/client";
+import { api } from "@/api/client/axios.client";
 import { toast } from "sonner";
 
 interface TwoFactorSetup {
@@ -14,26 +14,26 @@ interface TwoFactorStatus {
 
 const twoFactorApi = {
   getStatus: async (): Promise<TwoFactorStatus> => {
-    const { data } = await apiClient.get("/profile/2fa/status");
+    const { data } = await api.get("/profile/2fa/status");
     return data.data;
   },
 
   setup: async (): Promise<TwoFactorSetup> => {
-    const { data } = await apiClient.post("/profile/2fa/setup");
+    const { data } = await api.post("/profile/2fa/setup");
     return data.data;
   },
 
   verify: async (code: string): Promise<{ backupCodes: string[] }> => {
-    const { data } = await apiClient.post("/profile/2fa/verify", { code });
+    const { data } = await api.post("/profile/2fa/verify", { code });
     return data.data;
   },
 
   disable: async (code: string): Promise<void> => {
-    await apiClient.post("/profile/2fa/disable", { code });
+    await api.post("/profile/2fa/disable", { code });
   },
 
   regenerateBackupCodes: async (): Promise<{ backupCodes: string[] }> => {
-    const { data } = await apiClient.post("/profile/2fa/backup-codes");
+    const { data } = await api.post("/profile/2fa/backup-codes");
     return data.data;
   },
 };

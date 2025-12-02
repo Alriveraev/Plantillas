@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            return "{$frontendUrl}/reset-password?token={$token}&email={$notifiable->getEmailForPasswordReset()}";
+        });
         // 1. Límite Global de API (General)
         // Permite 60 peticiones por minuto por usuario (o por IP si es invitado).
         RateLimiter::for('api', function (Request $request) {

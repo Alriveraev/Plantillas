@@ -1,24 +1,29 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { authApi } from "@/api/endpoints";
-import { useAuthStore } from "../store";
-import { toast } from "sonner"
+import { authService } from "../services/auth.service";
+import { useAuthStore } from "../store/authStore";
+import { toast } from "sonner";
+
 export const useLogout = () => {
   const navigate = useNavigate();
   const { clearAuth } = useAuthStore();
+  const queryClient = useQueryClient(); // Para limpiar caché
 
   return useMutation({
-    mutationFn: () => authApi.logout(),
+    mutationFn: () => authService.logout(),
     onSuccess: () => {
-      clearAuth();
-      toast("/*  */Sesión cerrada",{
+      clearAuth(); // Limpia estado de Zustand
+      queryClient.clear(); // Limpia caché de React Query (usuario, datos, etc.)
+
+      toast.success("Sesión cerrada", {
         description: "Has cerrado sesión correctamente.",
       });
+
       navigate("/login");
     },
     onError: () => {
-      // Clear auth even if API call fails
       clearAuth();
+      queryClient.clear();
       navigate("/login");
     },
   });

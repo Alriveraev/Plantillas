@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/api/client";
+import { api } from "@/api/client/axios.client";
 import { APP_CONSTANTS } from "@/config/constants";
 
 export interface DashboardStats {
@@ -10,7 +10,7 @@ export interface DashboardStats {
 }
 
 const fetchDashboardStats = async (): Promise<DashboardStats> => {
-  const { data } = await apiClient.get("/dashboard/stats");
+  const { data } = await api.get("/dashboard/stats");
   return data.data;
 };
 

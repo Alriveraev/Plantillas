@@ -1,25 +1,37 @@
 import axios, { AxiosError } from "axios";
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { toast } from "sonner";
 import { env } from "@/config/env";
 import { APP_CONSTANTS } from "@/config/constants";
 import { useAuthStore } from "@/features/auth/store/authStore";
+
+const API_URL = env.apiUrl || "http://localhost:8000/api";
+
+// --- HELPER MANUAL PARA LEER COOKIES ---
+// A veces axios automático falla leyendo la cookie recién llegada.
+// Esto asegura que la leamos directamente del navegador.
+function getCookie(name: string): string | undefined {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift();
+}
 
 class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
-      baseURL: env.apiUrl,
+      baseURL: API_URL,
       timeout: APP_CONSTANTS.REQUEST_TIMEOUT,
       headers: {
         "Content-Type": "application/json",
-        // 🔥 CAMBIO 1: Indispensable para Laravel.
-        // Si no lo pones, Laravel te responderá con HTML (redirección al login) en vez de JSON cuando haya error.
         Accept: "application/json",
         "X-Requested-With": "XMLHttpRequest",
       },
-      // 🔥 CAMBIO 2 (Ya lo tenías): Permite enviar la cookie HttpOnly automáticamente
-      withCredentials: true,
+      withCredentials: true, // Vital para cookies
+      // Configuración explícita para que Axios sepa qué buscar
+      xsrfCookieName: "XSRF-TOKEN",
+      xsrfHeaderName: "X-XSRF-TOKEN",
     });
 
     this.setupInterceptors();
@@ -28,10 +40,16 @@ class ApiClient {
   private setupInterceptors() {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        // Laravel Sanctum busca automáticamente la cookie 'XSRF-TOKEN'
-        // y la pone en la cabecera 'X-XSRF-TOKEN'.
-        // Axios hace esto por defecto cuando withCredentials es true,
-        // así que NO necesitas hacer nada aquí.
+        // 🔥 FIX CRÍTICO: Inyección Manual del Token CSRF
+        // Si es una petición que modifica datos (POST, PUT, DELETE, PATCH)
+        // leemos la cookie manualmente y la forzamos en la cabecera.
+        if (config.method !== "get") {
+          const token = getCookie("XSRF-TOKEN");
+          if (token) {
+            // Decodificamos porque Laravel la envía URL-encoded
+            config.headers["X-XSRF-TOKEN"] = decodeURIComponent(token);
+          }
+        }
         return config;
       },
       (error: AxiosError) => {
@@ -41,31 +59,58 @@ class ApiClient {
 
     this.client.interceptors.response.use(
       (response) => response,
-      async (error: AxiosError) => {
-        const originalRequest = error.config;
+      async (error: AxiosError<any>) => {
+        const { response, config } = error;
 
-        // Si recibimos un 401 (No autenticado)
-        if (error.response?.status === 401) {
-          // Evitamos bucles infinitos si el error viene del mismo endpoint de login
-          if (
-            originalRequest?.url?.includes("/login") ||
-            originalRequest?.url?.includes("/sanctum/csrf-cookie")
-          ) {
-            return Promise.reject(error);
-          }
-
-          // Limpiamos el store de Zustand y redirigimos (opcional)
-          useAuthStore.getState().clearAuth();
-
-          // Opcional: forzar recarga o redirección
-          // window.location.href = "/auth/login";
+        if (!response) {
+          toast.error(
+            "Error de conexión. Verifica tu internet o el estado del servidor."
+          );
+          return Promise.reject(error);
         }
 
-        // Manejo del 419 (Token CSRF expirado o faltante)
-        if (error.response?.status === 419) {
-          // Aquí podrías intentar refrescar el token CSRF automáticamente
-          // pero generalmente es mejor dejar que falle y el usuario reintente.
-          console.error("CSRF Token Mismatch");
+        const status = response.status;
+        const data = response.data;
+        const errorMessage = data?.message || "Ocurrió un error inesperado.";
+
+        // 🔥 FIX: Lista de peticiones que NO deben mostrar alerta si dan 401
+        // Agregamos '/user/me' para que la carga inicial de la app sea silenciosa si es invitado.
+        const isSilentRequest =
+          config?.url?.includes("/login") ||
+          config?.url?.includes("/sanctum/csrf-cookie") ||
+          config?.url?.includes("/user/me");
+
+        switch (status) {
+          case 401:
+            if (!isSilentRequest) {
+              useAuthStore.getState().clearAuth();
+              toast.error("Tu sesión ha expirado.");
+            }
+            break;
+          case 403:
+            toast.warning(errorMessage);
+            break;
+          case 404:
+            if (!config?.url?.includes("sanctum/csrf-cookie")) {
+              toast.error("Recurso no encontrado.");
+            }
+            break;
+          case 419:
+            // Si falla el CSRF, intentamos refrescar la página o avisar
+            toast.error("La sesión de seguridad expiró. Intenta de nuevo.");
+            break;
+          case 422:
+            console.warn("Error de validación:", data.errors);
+            break;
+          case 429:
+            toast.error("Demasiados intentos. Espera un momento.");
+            break;
+          case 500:
+          case 503:
+            toast.error("Error interno del servidor.");
+            break;
+          default:
+            toast.error(errorMessage);
         }
 
         return Promise.reject(error);
@@ -77,11 +122,15 @@ class ApiClient {
     return this.client;
   }
 
-  // Helper para inicializar la protección CSRF antes del login
   public async getCsrfCookie() {
-    return this.client.get("/sanctum/csrf-cookie");
+    // Apuntamos a la raíz del servidor http://localhost:8000 quitando '/api'
+    const rootUrl = API_URL.replace(/\/api\/?$/, "");
+    return this.client.get(`${rootUrl}/sanctum/csrf-cookie`, {
+      baseURL: undefined,
+    });
   }
 }
 
-export const apiClient = new ApiClient(); // Exportamos la clase o la instancia según prefieras
-export const api = apiClient.getInstance(); // Exportación rápida para usar directamente
+export const apiClientInstance = new ApiClient();
+export const api = apiClientInstance.getInstance();
+export const getCsrfCookie = () => apiClientInstance.getCsrfCookie();

@@ -1,33 +1,28 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { profileApi } from "@/api/endpoints";
-import type { UpdateProfileRequest } from "@/api/endpoints";
-
-import { APP_CONSTANTS } from "@/config/constants";
-import { useAuthStore } from "@/features/auth/store";
+import { useMutation } from "@tanstack/react-query";
+import { profileService } from "@/features/profile/services/profile.service";
+import { useAuthStore } from "@/features/auth/store/authStore";
 import { toast } from "sonner";
 
 export const useUpdateProfile = () => {
-  const queryClient = useQueryClient();
-  const { updateUser } = useAuthStore();
+  const { setAuth } = useAuthStore();
 
   return useMutation({
-    mutationFn: (profileData: UpdateProfileRequest) =>
-      profileApi.update(profileData),
+    mutationFn: profileService.updateInfo,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({
-        queryKey: [APP_CONSTANTS.QUERY_KEYS.PROFILE],
-      });
-      updateUser(data);
-      toast("Perfil actualizado", {
-        description: "Tu perfil ha sido actualizado exitosamente.",
+      // Actualizamos el usuario en el store con la respuesta fresca del backend
+      setAuth(data.user);
+      toast.success("Perfil actualizado", {
+        description: "Tus datos personales han sido guardados.",
       });
     },
     onError: (error: any) => {
-      toast.error("Error al actualizar perfil", {
-        description:
-          error.response?.data?.message ||
-          "Ocurrió un error al actualizar tu perfil",
-      });
+      // El manejo de errores 422 se hace en el formulario, 
+      // aquí capturamos otros errores si es necesario.
+      if (error.response?.status !== 422) {
+        toast.error("Error al actualizar", {
+          description: error.response?.data?.message || "Ocurrió un error inesperado.",
+        });
+      }
     },
   });
 };

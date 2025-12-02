@@ -1,127 +1,31 @@
-import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
+import { createBrowserRouter, Navigate, type RouteObject } from "react-router"; // O react-router-dom
 import { RootLayout, PublicLayout, PrivateLayout } from "@/layouts";
 import { ProtectedRoute } from "./guards/ProtectedRoute";
 import { NotFound, RouteErrorBoundary } from "@/shared/components";
-import { lazyImport } from "./utils/lazyImport";
-import { ROUTES, ROUTE_PATHS } from "./paths";
-import { UserRole } from "@/api/types";
+import { ROUTES } from "./paths";
 
-// --- Lazy Loading Definitions ---
-const LoginPage = lazyImport(
-  () => import("@/features/auth/pages/LoginPage"),
-  "LoginPage"
-);
-const RegisterPage = lazyImport(
-  () => import("@/features/auth/pages/RegisterPage"),
-  "RegisterPage"
-);
-const DashboardPage = lazyImport(
-  () => import("@/features/dashboard/pages/DashboardPage"),
-  "DashboardPage"
-);
-const UsersPage = lazyImport(
-  () => import("@/features/users/pages/UsersPage"),
-  "UsersPage"
-);
-const UserDetailPage = lazyImport(
-  () => import("@/features/users/pages/UserDetailPage"),
-  "UserDetailPage"
-);
-const ProfilePage = lazyImport(
-  () => import("@/features/profile/pages/ProfilePage"),
-  "ProfilePage"
-);
+// --- Importar Rutas por Feature ---
+import { authRoutes } from "@/features/auth/routes/auth.routes";
+import { dashboardRoutes } from "@/features/dashboard/routes/dashboard.routes";
+import { usersRoutes } from "@/features/users/routes/users.routes";
+import { profileRoutes } from "@/features/profile/routes/profile.routes";
 
-// --- Rutas Públicas ---
-const publicRoutes: RouteObject[] = [
-  {
-    path: ROUTE_PATHS.LOGIN,
-    element: <LoginPage />,
-    handle: {
-      title: "Iniciar Sesión",
-      description: "Ingresa a tu cuenta",
-      hideBreadcrumb: true,
-      layout: "minimal",
-    },
-  },
-  {
-    path: ROUTE_PATHS.REGISTER,
-    element: <RegisterPage />,
-    handle: {
-      title: "Registrarse",
-      description: "Crea una nueva cuenta",
-      hideBreadcrumb: true,
-      layout: "minimal",
-    },
-  },
+// --- AGREGACIÓN DE RUTAS ---
+
+// Mantenemos esta exportación para que tu Sidebar/Breadcrumbs sigan funcionando
+export const publicRoutes: RouteObject[] = [
+  ...authRoutes, // Spread operator para fusionar las rutas de Auth
 ];
 
-// --- Rutas Privadas ---
+// Mantenemos esta exportación también
 export const privateRoutes: RouteObject[] = [
-  {
-    path: ROUTE_PATHS.DASHBOARD,
-    element: <DashboardPage />,
-    handle: {
-      title: "Dashboard",
-      description: "Panel de control principal",
-      breadcrumb: "Inicio",
-      icon: "dashboard",
-      requiresAuth: true,
-      analytics: {
-        category: "navigation",
-        action: "view_dashboard",
-      },
-    },
-  },
-  {
-    path: ROUTE_PATHS.USERS,
-    handle: {
-      title: "Usuarios",
-      icon: "users",
-      requiresAuth: true,
-      roles: [UserRole.ADMIN, UserRole.MODERATOR],
-      permissions: ["view_users"],
-    },
-    children: [
-      {
-        index: true,
-        element: <UsersPage />,
-        handle: {
-          // El hijo mantiene metadata específica para breadcrumbs o títulos internos
-          title: "Listado de Usuarios",/*  */
-          description: "Gestión de usuarios del sistema",
-          breadcrumb: "Listado",
-        },
-      },
-      {
-        path: ROUTE_PATHS.USER_DETAIL,
-        element: <UserDetailPage />,
-        handle: {
-          title: "Detalle de Usuario",
-          description: "Información detallada del usuario",
-          breadcrumb: "Detalle",
-          // No necesitamos repetir el icono aquí, ya lo tiene el padre
-          requiresAuth: true,
-          roles: [UserRole.ADMIN, UserRole.MODERATOR],
-          permissions: ["view_users"],
-        },
-      },
-    ],
-  },
-  {
-    path: ROUTE_PATHS.PROFILE,
-    element: <ProfilePage />,
-    handle: {
-      title: "Mi Perfil",
-      description: "Configuración de tu perfil personal",
-      breadcrumb: "Perfil",
-      icon: "user-circle",
-      requiresAuth: true,
-    },
-  },
+  ...dashboardRoutes,
+  ...usersRoutes,
+  ...profileRoutes,
 ];
 
-// --- Configuración Principal ---
+// --- CONFIGURACIÓN PRINCIPAL ---
+
 export const router = createBrowserRouter([
   {
     path: ROUTES.HOME,
@@ -132,21 +36,27 @@ export const router = createBrowserRouter([
         index: true,
         element: <Navigate to={ROUTES.DASHBOARD} replace />,
       },
+
+      // Layout Público
       {
         element: <PublicLayout />,
         errorElement: <RouteErrorBoundary />,
-        children: publicRoutes,
+        children: publicRoutes, // Usamos la variable que acabamos de componer arriba
       },
+
+      // Layout Privado (Protegido)
       {
         element: <ProtectedRoute />,
         errorElement: <RouteErrorBoundary />,
         children: [
           {
             element: <PrivateLayout />,
-            children: privateRoutes,
+            children: privateRoutes, // Usamos la variable compuesta arriba
           },
         ],
       },
+
+      // 404
       {
         path: "*",
         element: <NotFound />,

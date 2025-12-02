@@ -6,14 +6,17 @@ import { router } from "./routes/router";
 import { Toaster } from "./components/ui/sonner";
 import { ErrorBoundary } from "./shared/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 export const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <Toaster position="top-right"  />
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+          <Toaster position="top-right" />
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </ErrorBoundary>
