@@ -4,7 +4,7 @@ import type {
   LoginResponse,
   Verify2FAPayload,
   ResetPasswordRequest,
-} from "@/api/types"; // Asume tipos
+} from "@/api/types";
 
 export const authService = {
   /**
@@ -43,6 +43,7 @@ export const authService = {
 
   /**
    * Recuperación de Contraseña (Forgot Password)
+   * Envía el link al correo del usuario.
    */
   forgotPassword: async (email: string) => {
     await getCsrfCookie();
@@ -50,7 +51,17 @@ export const authService = {
   },
 
   /**
-   * Resetear Contraseña (Con token del email)
+   * Verificar validez del Token de Reset (Paso previo al formulario)
+   * Se llama al entrar a la página de Reset para ver si el link es válido.
+   */
+  verifyResetToken: async (token: string, email: string) => {
+    // Agregamos CSRF aquí también para evitar fallos si la ruta tiene middleware web
+    await getCsrfCookie();
+    return api.post("/reset-password/verify-token", { token, email });
+  },
+
+  /**
+   * Resetear Contraseña (Acción final)
    */
   resetPassword: async (payload: ResetPasswordRequest) => {
     await getCsrfCookie();

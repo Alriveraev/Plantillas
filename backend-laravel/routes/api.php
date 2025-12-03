@@ -20,6 +20,7 @@ Route::middleware(['throttle:login'])->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
     Route::post('/reset-password', [PasswordResetController::class, 'reset']);
+    Route::post('/reset-password/verify-token',  [PasswordResetController::class, 'verifyToken']);
 });
 
 // ==============================================================================

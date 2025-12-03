@@ -47,7 +47,7 @@ class AppServiceProvider extends ServiceProvider
         // Permite solo 5 intentos por minuto.e
         // Bloquea por IP para detener bots que prueban muchas cuentas desde el mismo sitio.
         RateLimiter::for('login', function (Request $request) {
-            return Limit::perMinute(5)
+            return Limit::perMinute(15)
                 ->by($request->ip())
                 ->response(function (Request $request, array $headers) {
                     return response()->json([
