@@ -56,7 +56,7 @@ export const ResetPasswordForm = () => {
         // Redireccionar al login con un estado o mensaje toast (opcional)
         navigate("/login", { replace: true });
         // Aquí podrías disparar un toast: "Contraseña actualizada exitosamente"
-      } catch (error) {
+      } catch {
         setServerError(
           "El enlace ha expirado o es inválido. Solicita uno nuevo."
         );

@@ -40,7 +40,7 @@ class UserResource extends JsonResource
                 'gender_id' => $this->profile?->gender_id, // Para el select del frontend
                 'avatar' => $avatarUrl, // Si implementaste avatar
             ],
-
+            'permissions' => $this->role?->permissions->pluck('key') ?? [],
             'security' => [
                 'two_factor_enabled' => $this->hasEnabledTwoFactorAuthentication(),
                 'email_verified' => !is_null($this->email_verified_at),

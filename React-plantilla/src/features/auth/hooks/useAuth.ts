@@ -21,7 +21,7 @@ export const useAuth = () => {
   const hasRole = (role: UserRole): boolean => {
     // Como el backend envía role_name para el enum, asegúrate que user.role sea el key
     // O usa user.role_name si así lo definiste en la interfaz
-    return user?.role === role;
+    return user?.role_name === role;
   };
 
   return {

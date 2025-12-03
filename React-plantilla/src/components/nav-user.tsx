@@ -34,12 +34,12 @@ export function NavUser({ user }: { user: User }) {
   const displayName = user.profile?.full_name || user.name;
   const displayEmail = user.email;
   const displayAvatar = user.avatar;
-  console.log(user);
 
   const firstLetter = user.profile?.first_name?.[0] || user.name?.[0] || "U";
+  const firstLetterSurname =
+    user.profile?.first_surname?.[0] || "U";
   const displayInitials =
-    firstLetter.toUpperCase() +
-      user.profile?.first_surname?.[0]?.toUpperCase() || "";
+    firstLetter.toUpperCase() + firstLetterSurname.toUpperCase() || "";
 
   return (
     <SidebarMenu>
@@ -106,7 +106,10 @@ export function NavUser({ user }: { user: User }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => logout()}
+              className="cursor-pointer"
+            >
               <LogOut />
               Cerrar Sesión
             </DropdownMenuItem>
