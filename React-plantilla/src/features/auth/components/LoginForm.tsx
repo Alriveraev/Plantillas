@@ -26,7 +26,7 @@ export const LoginForm = () => {
     },
     validate: toFormikValidationSchema(loginSchema),
     validateOnBlur: true,
-    validateOnChange: false,
+    validateOnChange: true,
     onSubmit: (values) => {
       login({ ...values, email: values.email.trim() });
     },
@@ -40,7 +40,7 @@ export const LoginForm = () => {
       */}
       <div className="relative flex h-40 flex-col justify-center bg-teal-900 p-8 text-white lg:h-full lg:justify-between lg:p-10">
         {/* Patrón de fondo */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-teal-900 to-teal-950 pointer-events-none" />
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-white via-teal-900 to-teal-950 pointer-events-none" />
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-2 text-xl font-bold tracking-tight justify-center lg:justify-start">

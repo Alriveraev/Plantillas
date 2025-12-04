@@ -28,7 +28,7 @@ export const ForgotPasswordForm = () => {
     initialValues: { email: "" },
     validate: toFormikValidationSchema(forgotPasswordSchema),
     validateOnBlur: true,
-    validateOnChange: false,
+    validateOnChange: true,
     onSubmit: async (values, { setSubmitting }) => {
       setError(null);
       try {

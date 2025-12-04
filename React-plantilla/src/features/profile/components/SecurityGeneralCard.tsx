@@ -42,11 +42,13 @@ export const SecurityGeneralCard = ({
     <Card className="border-stone-200 shadow-sm dark:border-stone-800 overflow-hidden">
       {/* Header Limpio */}
       <CardHeader className="border-b border-stone-200 bg-stone-50/30 pb-4 dark:border-stone-800 dark:bg-stone-900/20">
+      
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
             <Shield className="h-5 w-5" />
           </div>
           <div>
+            
             <CardTitle className="text-lg font-semibold text-stone-900 dark:text-stone-50">
               Resumen de Seguridad
             </CardTitle>

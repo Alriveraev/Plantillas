@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useAuth } from "@/features/auth/hooks/useAuth"; // 🔥 IMPORTAR EL HOOK
-import { UserRole } from "@/api/types/auth.types"; // Importar el Enum para comparaciones
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { UserRole } from "@/api/types/auth.types";
 
+// Components
 import {
   ProfileForm,
   AvatarUpload,
@@ -15,18 +16,18 @@ import {
   TwoFactorCard,
   ChangePasswordCard,
 } from "../components";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User as UserIcon, Shield, Lock } from "lucide-react";
-import { toast } from "sonner";
 
-// Mock data para historial (esto lo dejamos mock por ahora o se crea un endpoint luego)
+// UI Components
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+// Icons
+import { User, Shield, Fingerprint, Activity, Lock } from "lucide-react";
+
+// --- HELPERS ---
 const mockLoginHistory = [
   {
     id: "1",
@@ -44,7 +45,6 @@ const mockLoginHistory = [
   },
 ];
 
-// Helper para mostrar nombres bonitos de roles
 const ROLE_LABELS: Record<string, string> = {
   [UserRole.ADMIN]: "Administrador",
   [UserRole.MODERATOR]: "Moderador",
@@ -55,26 +55,25 @@ const ROLE_LABELS: Record<string, string> = {
 type VerifyAction = "change-method" | "change-device" | "view-backup-codes";
 
 export const ProfilePage = () => {
-  // 🔥 OBTENER USUARIO REAL DEL STORE
   const { user } = useAuth();
 
-  // --- States (Modales y Alertas) ---
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  // --- States ---
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
+    useState(false);
   const [isTwoFactorModalOpen, setIsTwoFactorModalOpen] = useState(false);
-  const [isCloseSessionsAlertOpen, setIsCloseSessionsAlertOpen] = useState(false);
+  const [isCloseSessionsAlertOpen, setIsCloseSessionsAlertOpen] =
+    useState(false);
   const [isDisable2FAAlertOpen, setIsDisable2FAAlertOpen] = useState(false);
-  const [isVerifyPasswordModalOpen, setIsVerifyPasswordModalOpen] = useState(false);
-  const [isViewBackupCodesModalOpen, setIsViewBackupCodesModalOpen] = useState(false);
+  const [isVerifyPasswordModalOpen, setIsVerifyPasswordModalOpen] =
+    useState(false);
+  const [isViewBackupCodesModalOpen, setIsViewBackupCodesModalOpen] =
+    useState(false);
 
-  // --- States (Lógica de Verificación) ---
   const [pendingAction, setPendingAction] = useState<VerifyAction | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
-
-  // --- States (Datos 2FA) ---
   const [isDisabling2FA, setIsDisabling2FA] = useState(false);
 
   // --- Handlers ---
-
   const requestPasswordVerification = (action: VerifyAction) => {
     setPendingAction(action);
     setIsVerifyPasswordModalOpen(true);
@@ -82,18 +81,14 @@ export const ProfilePage = () => {
 
   const handlePasswordVerified = async () => {
     setIsVerifying(true);
-    // Aquí llamarías a un endpoint real para verificar password
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsVerifying(false);
     setIsVerifyPasswordModalOpen(false);
-
     switch (pendingAction) {
       case "change-method":
       case "change-device":
         setIsTwoFactorModalOpen(true);
-        toast.success("Identidad verificada", {
-          description: "Ahora puedes reconfigurar tu seguridad.",
-        });
+        toast.success("Identidad verificada");
         break;
       case "view-backup-codes":
         setIsViewBackupCodesModalOpen(true);
@@ -102,194 +97,211 @@ export const ProfilePage = () => {
     setPendingAction(null);
   };
 
-  // Se ejecuta cuando el modal de setup termina exitosamente
   const handle2FASuccess = () => {
-    // Aquí deberías invalidar la query 'user' para refrescar el dato two_factor_enabled
-    // queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
     toast.success("Doble factor activado correctamente");
     setIsTwoFactorModalOpen(false);
   };
 
   const handle2FADisable = async () => {
     setIsDisabling2FA(true);
-    // Aquí llamarías a useDisable2FA() hook
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsDisabling2FA(false);
     setIsDisable2FAAlertOpen(false);
-    
-    // queryClient.invalidateQueries(...)
-    toast.success("2FA Desactivado", {
-      description: "Se ha eliminado la capa de seguridad extra.",
-    });
+    toast.success("2FA Desactivado");
   };
 
-  // Si no hay usuario (caso raro porque es ruta protegida), no renderizamos o mostramos loader
   if (!user) return null;
 
   return (
-    <div className="container w-full py-8 pt-0 space-y-8 animate-in fade-in duration-500">
-      {/* --- Page Header --- */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-50">
-          Cuenta y Configuración
-        </h1>
-        <p className="text-stone-500 dark:text-stone-400">
-          Gestiona tu información personal y protege tu cuenta.
+    <div className="space-y-6 p-4 pb-16 md:pb-16 animate-in fade-in duration-500 w-full mx-auto">
+      {/* Header */}
+      <div className="space-y-0.5">
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50">
+          Configuración
+        </h2>
+        <p className="text-sm md:text-base text-muted-foreground">
+          Administra la configuración de tu cuenta y seguridad.
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-8">
-        {/* --- Navigation Tabs --- */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <TabsList className="h-auto p-1.5 bg-stone-100 rounded-xl border border-stone-200 dark:bg-stone-900 dark:border-stone-800 w-full sm:w-auto grid grid-cols-2 sm:flex">
+      <Separator className="my-6" />
+
+      {/* Main Layout */}
+      <Tabs
+        defaultValue="general"
+        className="flex flex-col lg:flex-row lg:space-x-12 lg:space-y-0 space-y-8"
+      >
+        {/* Sidebar Nav */}
+        <aside className="overflow-x-auto pb-2 lg:pb-0">
+          <TabsList className="flex lg:flex-col w-full h-auto bg-transparent p-0 justify-start space-x-2 lg:space-x-0 lg:space-y-1 items-start">
             <TabsTrigger
               value="general"
-              className="flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-medium text-stone-500 transition-all data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm hover:text-stone-700 dark:text-stone-400 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-teal-400 dark:hover:text-stone-200"
+              className={cn(
+                "flex-1 lg:flex-none justify-center lg:justify-start px-4 py-2 text-left font-medium rounded-md transition-colors",
+                "hover:bg-stone-100 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-50",
+                "data-[state=active]:bg-stone-100 data-[state=active]:text-teal-700 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-teal-400",
+                "data-[state=active]:shadow-none border border-transparent data-[state=active]:border-stone-200 dark:data-[state=active]:border-stone-700 lg:border-none"
+              )}
             >
-              <div className="flex items-center justify-center gap-2.5">
-                <UserIcon className="h-4 w-4" />
-                General
-              </div>
+              <User className="mr-2 h-4 w-4" />
+              General
             </TabsTrigger>
             <TabsTrigger
               value="security"
-              className="flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-medium text-stone-500 transition-all data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm hover:text-stone-700 dark:text-stone-400 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-teal-400 dark:hover:text-stone-200"
+              className={cn(
+                "flex-1 lg:flex-none justify-center lg:justify-start px-4 py-2 text-left font-medium rounded-md transition-colors",
+                "hover:bg-stone-100 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-50",
+                "data-[state=active]:bg-stone-100 data-[state=active]:text-teal-700 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-teal-400",
+                "data-[state=active]:shadow-none border border-transparent data-[state=active]:border-stone-200 dark:data-[state=active]:border-stone-700 lg:border-none"
+              )}
             >
-              <div className="flex items-center justify-center gap-2.5">
-                <Shield className="h-4 w-4" />
-                Seguridad
-              </div>
+              <Shield className="mr-2 h-4 w-4" />
+              Seguridad
             </TabsTrigger>
           </TabsList>
-        </div>
+        </aside>
 
-        {/* --- Tab Content: GENERAL --- */}
-        <TabsContent
-          value="general"
-          className="space-y-6 focus-visible:outline-none animate-in fade-in slide-in-from-left-4 duration-300"
-        >
-          <div className="grid gap-8 lg:grid-cols-12">
-            {/* Columna Izquierda (Avatar) - 4 cols */}
-            <div className="lg:col-span-4 space-y-6">
-              {/* Pasamos el avatar real del usuario */}
+        {/* Content Area */}
+        <div className="flex-1 ">
+          {" "}
+          {/* Ancho máximo aumentado para este layout */}
+          {/* === TAB GENERAL === */}
+          <TabsContent value="general" className="space-y-6 mt-0">
+            {/* ... (Sin cambios aquí, mantienes tu diseño de perfil actual) ... */}
+            <div className="hidden md:block">
+              <h3 className="text-lg font-medium">Perfil</h3>
+              <p className="text-sm text-muted-foreground">
+                Así es como te verán otros usuarios en la plataforma.
+              </p>
+              <Separator className="my-4" />
+            </div>
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 py-4">
               <AvatarUpload currentAvatar={user.avatar} userName={user.name} />
+              <div className="space-y-1 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <h4 className="font-medium text-stone-900 dark:text-stone-100 text-lg sm:text-base">
+                    {user.name}
+                  </h4>
+                  <Badge
+                    variant="secondary"
+                    className="text-xs font-normal bg-teal-50 text-teal-700 border-teal-200"
+                  >
+                    {ROLE_LABELS[user.role] || user.role}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground max-w-[250px] sm:max-w-none mx-auto sm:mx-0">
+                  JPG, PNG o WEBP. Máximo 2MB.
+                </p>
+              </div>
+            </div>
+            <Separator className="md:hidden mb-6" />
+            <ProfileForm user={user} />
+          </TabsContent>
+          {/* === TAB SEGURIDAD (NUEVO DISEÑO ASIMÉTRICO) === */}
+          <TabsContent value="security" className="mt-0 space-y-6 ">
+            <div className="hidden md:block">
+              <h3 className="text-lg font-medium">Seguridad</h3>
+              <p className="text-sm text-muted-foreground">
+                Supervisa tus sesiones y refuerza la protección de tu cuenta.
+              </p>
+              <Separator className="my-4" />
+            </div>
 
-              {/* Info Card Rol */}
-              <Card className="border-stone-200 shadow-sm bg-stone-50/50 dark:border-stone-800 dark:bg-stone-900/20">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-stone-500 uppercase tracking-wider">
-                    Rol de usuario
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-teal-500" />
-                    <span className="font-semibold text-stone-900 dark:text-stone-100">
-                      {/* Usamos el mapa para mostrar "Administrador" en vez de "admin" */}
-                      {ROLE_LABELS[user.role] || user.role}
-                    </span>
+            {/* GRID PRINCIPAL: 2 Columnas Asimétricas (2/3 + 1/3) */}
+            <div className="grid gap-6 xl:grid-cols-2">
+              {/* COLUMNA IZQUIERDA (Principal - Actividad) */}
+              <div className="lg:col-span-1 space-y-6 w-full">
+                <div className="flex items-center gap-2 text-stone-500 ">
+                  <Activity className="h-4 w-4" />
+                  <h4 className="text-sm font-medium uppercase tracking-wider">
+                    Monitor de Actividad
+                  </h4>
+                </div>
+                {/* Nota informativa extra (Opcional) */}
+                <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                  <p className="flex items-center gap-2 font-semibold">
+                    <Shield className="h-4 w-4" />
+                    ¿No reconoces una actividad?
+                  </p>
+                  <p className="mt-1 ml-6">
+                    Cierra todas las sesiones inmediatamente y cambia tu
+                    contraseña desde el panel lateral.
+                  </p>
+                </div>
+                {/* Tarjeta de Actividad (Grande) */}
+                <SecurityGeneralCard
+                  lastLogin={user.updatedAt || "Reciente"}
+                  loginHistory={mockLoginHistory}
+                  sessionCount={1}
+                  onCloseAllSessions={() => setIsCloseSessionsAlertOpen(true)}
+                />
+              </div>
+
+              {/* COLUMNA DERECHA (Lateral - Credenciales) */}
+              <div className="space-y-6 w-full lg:col-span-1">
+                <div className="flex items-center gap-2 text-stone-500 ">
+                  <Lock className="h-4 w-4" />
+                  <h4 className="text-sm font-medium uppercase tracking-wider">
+                    Credenciales
+                  </h4>
+                </div>
+
+                {/* Stack de Acciones Vertical */}
+                <div className="flex flex-col gap-4 ">
+                  <ChangePasswordCard
+                    lastChanged="Desconocido"
+                    onChangePassword={() => setIsChangePasswordModalOpen(true)}
+                  />
+
+                  <div className="flex items-center gap-2 text-stone-500">
+                    <Fingerprint className="h-4 w-4" />
+                    <h4 className="text-sm font-medium uppercase tracking-wider">
+                      Verificación en dos pasos
+                    </h4>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
 
-            {/* Columna Derecha (Formulario) - 8 cols */}
-            <div className="lg:col-span-8">
-              <Card className="border-stone-200 shadow-sm dark:border-stone-800">
-                <CardHeader className="border-b border-stone-100 dark:border-stone-800 pb-4">
-                  <CardTitle className="text-xl">Información Personal</CardTitle>
-                  <CardDescription>
-                    Esta información será visible para otros miembros del equipo.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  {/* Pasamos el objeto User real */}
-                  <ProfileForm user={user} />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* --- Tab Content: SECURITY --- */}
-        <TabsContent
-          value="security"
-          className="space-y-6 focus-visible:outline-none animate-in fade-in slide-in-from-right-4 duration-300"
-        >
-          <div className="grid gap-8 lg:grid-cols-12 items-start">
-            <div className="lg:col-span-7 space-y-6">
-              <SecurityGeneralCard
-                lastLogin={user.updatedAt || "Reciente"} // Usamos datos reales o fallback
-                loginHistory={mockLoginHistory}
-                sessionCount={1} // Podrías traer esto de un endpoint si quisieras
-                onCloseAllSessions={() => setIsCloseSessionsAlertOpen(true)}
-              />
-
-              <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4 flex gap-3 dark:bg-blue-900/10 dark:border-blue-900/30">
-                <Lock className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                <div className="text-sm text-stone-600 dark:text-stone-300">
-                  <p className="font-semibold text-blue-800 dark:text-blue-200 mb-1">
-                    Recomendación de seguridad
-                  </p>
-                  <p>
-                    Si notas actividad sospechosa, cambia tu contraseña
-                    inmediatamente y cierra todas las sesiones activas.
-                  </p>
+                  <TwoFactorCard
+                    isEnabled={!!user.two_factor_enabled}
+                    onEnable={() => setIsTwoFactorModalOpen(true)}
+                    onDisable={() => setIsDisable2FAAlertOpen(true)}
+                    onChangeMethod={() =>
+                      requestPasswordVerification("change-method")
+                    }
+                    onChangeDevice={() =>
+                      requestPasswordVerification("change-device")
+                    }
+                    onViewBackupCodes={() =>
+                      requestPasswordVerification("view-backup-codes")
+                    }
+                  />
                 </div>
               </div>
             </div>
-
-            <div className="lg:col-span-5 flex flex-col gap-6">
-              <ChangePasswordCard
-                lastChanged="Desconocido"
-                onChangePassword={() => setIsChangePasswordModalOpen(true)}
-              />
-
-              <TwoFactorCard
-                // 🔥 CONECTADO AL ESTADO REAL DEL USUARIO
-                isEnabled={!!user.two_factor_enabled}
-                onEnable={() => setIsTwoFactorModalOpen(true)}
-                onDisable={() => setIsDisable2FAAlertOpen(true)}
-                onChangeMethod={() =>
-                  requestPasswordVerification("change-method")
-                }
-                onChangeDevice={() =>
-                  requestPasswordVerification("change-device")
-                }
-                onViewBackupCodes={() =>
-                  requestPasswordVerification("view-backup-codes")
-                }
-              />
-            </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
+        </div>
       </Tabs>
 
-      {/* --- Modals & Global Alerts --- */}
+      {/* Modals */}
       <ChangePasswordModal
         open={isChangePasswordModalOpen}
         onOpenChange={setIsChangePasswordModalOpen}
       />
-
       <TwoFactorSetupModal
         open={isTwoFactorModalOpen}
         onOpenChange={setIsTwoFactorModalOpen}
         onSuccess={handle2FASuccess}
       />
-
       <CloseSessionsAlert
         open={isCloseSessionsAlertOpen}
         onOpenChange={setIsCloseSessionsAlertOpen}
         sessionCount={1}
       />
-
       <Disable2FAAlert
         open={isDisable2FAAlertOpen}
         onOpenChange={setIsDisable2FAAlertOpen}
         onConfirm={handle2FADisable}
         isLoading={isDisabling2FA}
       />
-
       <VerifyPasswordModal
         open={isVerifyPasswordModalOpen}
         onOpenChange={setIsVerifyPasswordModalOpen}
@@ -297,7 +309,6 @@ export const ProfilePage = () => {
         actionType={pendingAction || "view-backup-codes"}
         isLoading={isVerifying}
       />
-
       <ViewBackupCodesModal
         open={isViewBackupCodesModalOpen}
         onOpenChange={setIsViewBackupCodesModalOpen}
