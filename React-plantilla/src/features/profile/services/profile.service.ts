@@ -1,26 +1,47 @@
 import { api } from "@/api/client/axios.client";
 import type { User } from "@/api/types/auth.types";
 
+// ==========================================
+// Interfaces de Tipado
+// ==========================================
+
 export interface UpdatePasswordData {
   current_password: string;
   password: string;
   password_confirmation: string;
 }
 
+export interface TwoFactorEnableResponse {
+  message: string;
+  secret: string;
+  qr_code_url: string; // URL otpauth:// para generar el QR
+}
+
+export interface TwoFactorConfirmResponse {
+  message: string;
+  recovery_codes: string[]; // Array de strings para mostrar al usuario
+}
+
+export interface PasswordConfirmationPayload {
+  password: string;
+}
+
+// ==========================================
+// Servicio Profile (Perfil + Seguridad)
+// ==========================================
+
 export const profileService = {
   /**
    * Actualizar Avatar (y resto de datos requeridos por validación)
-   * Enviamos todos los datos del perfil existente para pasar las reglas 'required' del backend.
    */
   updateAvatar: async (file: File, currentUser: User) => {
     const formData = new FormData();
 
-    // 1. Datos obligatorios (Users Table)
+    // 1. Datos obligatorios
     formData.append("email", currentUser.email);
 
-    // 2. Datos del Perfil (Profile Table)
-    // Mapeamos los datos existentes o usamos fallbacks seguros
-    const p = (currentUser.profile as any) || {}; // Cast a any para flexibilidad si los tipos no están 100% sincro
+    // 2. Datos del Perfil (Mapeo seguro)
+    const p = (currentUser.profile as any) || {};
 
     formData.append(
       "first_name",
@@ -31,9 +52,8 @@ export const profileService = {
     formData.append(
       "first_surname",
       p.first_surname || p.last_name || "Apellido"
-    ); // Fallback para evitar error 422
+    );
     formData.append("second_surname", p.second_surname || "");
-    formData.append("third_surname", p.third_surname || "");
     formData.append("phone", p.phone || "");
 
     if (p.gender_id) {
@@ -42,11 +62,6 @@ export const profileService = {
 
     // 3. El archivo
     formData.append("avatar", file);
-
-    // 4. Método
-    // Tu ruta es POST /user/profile/info, así que enviamos POST nativo.
-    // Si usaras PUT en el backend para archivos, necesitarías formData.append("_method", "PUT");
-    // pero con Route::post no es necesario.
 
     const { data } = await api.post<{ user: User; message: string }>(
       "/user/profile/info",
@@ -61,7 +76,6 @@ export const profileService = {
 
   /**
    * Actualizar Información de Texto
-   * Ruta: POST /api/user/profile/info
    */
   updateInfo: async (data: Partial<User> & any) => {
     const { data: response } = await api.post<{ user: User; message: string }>(
@@ -73,7 +87,6 @@ export const profileService = {
 
   /**
    * Actualizar Contraseña
-   * Ruta: PUT /api/user/profile/password
    */
   updatePassword: async (data: UpdatePasswordData) => {
     const { data: response } = await api.put<{ message: string }>(
@@ -81,5 +94,74 @@ export const profileService = {
       data
     );
     return response;
+  },
+
+  // ============================================================
+  // SEGURIDAD: 2FA (Doble Factor)
+  // ============================================================
+
+  /**
+   * Paso 1: Habilitar 2FA
+   * Obtiene el secreto y la URL del QR para mostrar al usuario.
+   */
+  enableTwoFactor: async () => {
+    const { data } = await api.post<TwoFactorEnableResponse>(
+      "/user/security/2fa/enable"
+    );
+    return data;
+  },
+
+  /**
+   * Paso 2: Confirmar 2FA
+   * Envía el código TOTP para activar definitivamente el 2FA.
+   * Retorna los códigos de recuperación.
+   */
+  confirmTwoFactor: async (code: string) => {
+    const { data } = await api.post<TwoFactorConfirmResponse>(
+      "/user/security/2fa/confirm",
+      { code }
+    );
+    return data;
+  },
+
+  /**
+   * Desactivar 2FA
+   * Requiere la contraseña actual del usuario por seguridad.
+   */
+  disableTwoFactor: async (password: string) => {
+    const { data } = await api.post<{ message: string }>(
+      "/user/security/2fa/disable",
+      { password }
+    );
+    return data;
+  },
+
+  /**
+   * Regenerar Códigos de Recuperación
+   * Útil si el usuario los perdió o gastó.
+   * (Asegúrate de agregar la ruta en api.php si decides usarla: POST /user/security/2fa/regenerate)
+   */
+  regenerateRecoveryCodes: async (password: string) => {
+    const { data } = await api.post<TwoFactorConfirmResponse>(
+      "/user/security/2fa/regenerate-codes",
+      { password }
+    );
+    return data;
+  },
+
+  // ============================================================
+  // SEGURIDAD: Gestión de Sesiones
+  // ============================================================
+
+  /**
+   * Cerrar sesión en otros dispositivos
+   * Invalida todas las sesiones excepto la actual. Requiere password.
+   */
+  logoutOtherSessions: async (password: string) => {
+    const { data } = await api.post<{ message: string }>(
+      "/user/security/logout-others",
+      { password }
+    );
+    return data;
   },
 };

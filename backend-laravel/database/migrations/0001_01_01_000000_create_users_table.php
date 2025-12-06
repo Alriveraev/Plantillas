@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('label');
             $table->timestamps();
         });
+
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary(); // UUID
             $table->string('name');
@@ -29,6 +30,7 @@ return new class extends Migration
             // Google 2FA
             $table->text('google2fa_secret')->nullable();
             $table->timestamp('two_factor_confirmed_at')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable(); // <--- AGREGADO AQUÍ
 
             // Auditoría
             $table->timestamp('last_login_at')->nullable();
@@ -41,8 +43,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('roles');
-
+        // IMPORTANTE: Borrar users primero porque depende de roles
         Schema::dropIfExists('users');
+        Schema::dropIfExists('roles');
     }
 };

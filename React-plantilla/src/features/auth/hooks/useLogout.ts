@@ -15,9 +15,7 @@ export const useLogout = () => {
       clearAuth(); // Limpia estado de Zustand
       queryClient.clear(); // Limpia caché de React Query (usuario, datos, etc.)
 
-      toast.success("Sesión cerrada", {
-        description: "Has cerrado sesión correctamente.",
-      });
+      toast.success("Has cerrado sesión correctamente.");
 
       navigate("/login");
     },

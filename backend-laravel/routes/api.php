@@ -11,67 +11,88 @@ use App\Http\Controllers\Api\UserController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
+|
+| Estructura diseñada para SPA (React) con Laravel Sanctum.
+| Requiere axios.defaults.withCredentials = true en el Frontend.
+|
 */
 
 // ==============================================================================
 // 1. ZONA PÚBLICA (GUEST)
 // ==============================================================================
-Route::middleware(['throttle:login'])->group(function () {
+// Middleware 'guest': Solo accesible si NO estás logueado.
+// Middleware 'throttle:login': Protección contra fuerza bruta.
+Route::middleware(['guest', 'throttle:login'])->group(function () {
+
+    // Login: Crea la sesión y establece la cookie.
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+    // Recuperación de contraseña (funciona con seguridad basada en email y token)
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
     Route::post('/reset-password', [PasswordResetController::class, 'reset']);
     Route::post('/reset-password/verify-token',  [PasswordResetController::class, 'verifyToken']);
 });
 
 // ==============================================================================
-// 2. ZONA PROTEGIDA (REQUIRERE LOGIN + COOKIE)
+// 2. ZONA PROTEGIDA (SESIÓN ACTIVA)
 // ==============================================================================
+// Middleware 'auth:sanctum': Verifica que la cookie de sesión sea válida.
+// Middleware 'active': (Personalizado) Verifica que el usuario no esté baneado.
 Route::middleware(['auth:sanctum', 'active', 'throttle:api'])->group(function () {
 
-    // 2.1 Autenticación Básica
+    // --------------------------------------------------------------------------
+    // 2.1 Acciones permitidas ANTES de verificar 2FA
+    // --------------------------------------------------------------------------
+
+    // Permitimos Logout siempre (por si el usuario se atasca en el 2FA)
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // 2.2 Verificación de Segundo Factor (Paso intermedio del login)
-    // Tiene un throttle estricto (3 intentos/min)
+    // Ruta para enviar el código de 6 dígitos.
+    // Tiene un throttle estricto (ej: 5 intentos por minuto) para evitar adivinanzas.
     Route::middleware(['throttle:two-factor'])->post('/2fa/verify', [AuthController::class, 'verifyTwoFactor']);
 
-    // 2.3 Configuración de Seguridad (El usuario gestiona su propia seguridad)
-    // URL Final: /api/user/security/...
-    Route::prefix('user/security')->group(function () {
-        Route::post('/2fa/enable', [TwoFactorManageController::class, 'enable']);
-        Route::post('/2fa/confirm', [TwoFactorManageController::class, 'confirm']);
-        Route::post('/2fa/disable', [TwoFactorManageController::class, 'disable']);
-        Route::post('/logout-others', [AuthController::class, 'logoutOthers']);
-    });
 
     // ==========================================================================
-    // 3. ZONA DE ALTA SEGURIDAD (REQUIERE 2FA VERIFICADO)
+    // 3. ZONA DE ALTA SEGURIDAD (REQUIERE 2FA COMPLETADO)
     // ==========================================================================
+    // Middleware '2fa':
+    // - Si el usuario NO tiene 2FA activado -> Pasa.
+    // - Si el usuario SÍ tiene 2FA activado -> Verifica la sesión '2fa_verified'.
     Route::middleware(['2fa'])->group(function () {
 
-        // 3.1 Gestión del Propio Usuario (Mi Perfil)
-        // URL Final: /api/user/...
-        Route::prefix('user')->group(function () {
+        // ----------------------------------------------------------------------
+        // 3.1 Gestión de Seguridad (FIX: Movido dentro de '2fa')
+        // ----------------------------------------------------------------------
+        Route::prefix('user/security')->group(function () {
+            // Habilitar: Si no tengo 2FA, entro directo.
+            Route::post('/2fa/enable', [TwoFactorManageController::class, 'enable']);
 
-            // Obtener mis datos
+            // Confirmar: Paso final de habilitación.
+            Route::post('/2fa/confirm', [TwoFactorManageController::class, 'confirm']);
+
+            // Deshabilitar: AHORA ESTÁ SEGURO. Solo alguien verificado puede apagarlo.
+            Route::post('/2fa/disable', [TwoFactorManageController::class, 'disable']);
+
+            // Cerrar otras sesiones.
+            Route::post('/logout-others', [AuthController::class, 'logoutOthers']);
+        });
+
+        // ----------------------------------------------------------------------
+        // 3.2 Gestión del Usuario (Mi Perfil)
+        // ----------------------------------------------------------------------
+        Route::prefix('user')->group(function () {
             Route::get('/me', [AuthController::class, 'user']);
 
-            // Actualizar mi perfil
-            // URL Final: /api/user/profile/info y /api/user/profile/password
             Route::prefix('profile')->group(function () {
                 Route::post('/info', [ProfileController::class, 'update']);
                 Route::put('/password', [ProfileController::class, 'updatePassword']);
             });
         });
 
-        // 3.2 Gestión del Sistema (Admin/Moderator)
-        // URL Final: /api/users/...
-
-        // CRUD Completo de Usuarios (Index, Store, Show, Update, Destroy)
+        // ----------------------------------------------------------------------
+        // 3.3 Gestión del Sistema (Admin/Recursos)
+        // ----------------------------------------------------------------------
         Route::apiResource('users', UserController::class);
-
-        // Ruta específica para obtener el avatar privado de un usuario por ID
-        // URL: /api/users/{uuid}/avatar
         Route::get('/users/{user}/avatar', [UserController::class, 'getAvatar'])->name('users.avatar');
     });
 });

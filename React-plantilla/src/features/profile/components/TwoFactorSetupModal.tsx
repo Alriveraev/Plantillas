@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import QRCodeLib from "react-qr-code"; // LIBRERÍA NUEVA PARA PINTAR EL QR REAL
+const QRCode = (QRCodeLib as any).default ? (QRCodeLib as any).default : QRCodeLib;
 import {
   Dialog,
   DialogContent,
@@ -7,7 +9,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-// Reemplazamos el Input normal por los componentes de OTP
 import {
   InputOTP,
   InputOTPGroup,
@@ -16,20 +17,23 @@ import {
 } from "@/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 
-import { 
-  AlertCircle, 
-  Check, 
-  Copy, 
-  QrCode, 
-  ShieldCheck, 
-  Smartphone, 
-  KeyRound, 
+import {
+  AlertCircle,
+  Check,
+  Copy,
+  ShieldCheck,
+  Smartphone,
+  KeyRound,
   ArrowRight,
   ArrowLeft,
-  Download
+  Download,
+  Loader2, // Icono de carga
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+// Importamos el servicio
+import { profileService } from "@/features/profile/services/profile.service"; // Ajusta la ruta a donde guardaste el servicio
 
 type Step = "qr" | "verify" | "backup";
 
@@ -47,44 +51,80 @@ export const TwoFactorSetupModal = ({
   const [step, setStep] = useState<Step>("qr");
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Estados para datos reales del Backend
+  const [qrUrl, setQrUrl] = useState<string>("");
+  const [secretKey, setSecretKey] = useState<string>("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [hasCopiedCodes, setHasCopiedCodes] = useState(false);
 
-  // Mock data
-  const secretKey = "JBSWY3DPEBLW64TMMQ======";
-  const backupCodes = [
-    "A1B2-C3D4-E5F6",
-    "G7H8-I9J0-K1L2",
-    "M3N4-O5P6-Q7R8",
-    "S9T0-U1V2-W3X4",
-    "Y5Z6-A7B8-C9D0",
-  ];
+  // 1. Al abrir el modal, pedimos el secreto y la URL del QR al backend
+  useEffect(() => {
+    if (open && step === "qr" && !qrUrl) {
+      fetchQrData();
+    }
+  }, [open]);
 
-  const handleVerify = async () => {
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setStep("backup");
-    toast.success("Código verificado correctamente");
+  const fetchQrData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await profileService.enableTwoFactor();
+      setQrUrl(data.qr_code_url);
+      setSecretKey(data.secret);
+    } catch (error) {
+      toast.error("Error al iniciar la configuración de 2FA");
+      onOpenChange(false); // Cerramos si falla
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleComplete = async () => {
+  // 2. Verificar el código TOTP ingresado
+  const handleVerify = async () => {
+    if (code.length !== 6) return;
+
+    try {
+      setIsLoading(true);
+      // Enviamos el código al backend
+      const response = await profileService.confirmTwoFactor(code);
+      
+      // Si es exitoso, guardamos los códigos de recuperación que nos devuelve
+      setBackupCodes(response.recovery_codes);
+      
+      toast.success("Código verificado correctamente");
+      setStep("backup"); // Pasamos al paso final
+    } catch (error: any) {
+      // Axios suele devolver el error 422 en response.data.message
+      const msg = error.response?.data?.message || "Código incorrecto o expirado";
+      toast.error(msg);
+      setCode(""); // Limpiamos para reintentar
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3. Finalizar el proceso
+  const handleComplete = () => {
     if (!hasCopiedCodes) {
-        toast.warning("Por favor guarda tus códigos antes de continuar");
-        return;
+      toast.warning("Por favor guarda tus códigos antes de continuar");
+      return;
     }
     
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    onSuccess();
+    onSuccess(); // Avisamos al componente padre que recargue el usuario
     handleClose();
     toast.success("Autenticación de dos factores activada");
   };
 
   const handleClose = () => {
-    setStep("qr");
-    setCode("");
-    setHasCopiedCodes(false);
+    // Reset de todo el estado al cerrar
+    setTimeout(() => {
+        setStep("qr");
+        setCode("");
+        setQrUrl("");
+        setSecretKey("");
+        setBackupCodes([]);
+        setHasCopiedCodes(false);
+    }, 300); // Pequeño delay para que no se vea el reset mientras cierra
     onOpenChange(false);
   };
 
@@ -100,7 +140,10 @@ export const TwoFactorSetupModal = ({
 
   const downloadBackupCodes = () => {
     const element = document.createElement("a");
-    const file = new Blob([backupCodes.join("\n")], {type: 'text/plain'});
+    const file = new Blob([
+        `CÓDIGOS DE RECUPERACIÓN VETCARE\n\nGuarda estos códigos en un lugar seguro.\n\n${backupCodes.join("\n")}`
+    ], { type: 'text/plain' });
+    
     element.href = URL.createObjectURL(file);
     element.download = "vetcare-backup-codes.txt";
     document.body.appendChild(element);
@@ -112,7 +155,7 @@ export const TwoFactorSetupModal = ({
 
   // --- CONFIGURACIÓN DEL STEPPER ---
   const steps = [
-    { id: "qr", label: "Escanear", icon: QrCode },
+    { id: "qr", label: "Escanear", icon: ShieldCheck }, // Cambié icono a ShieldCheck para variedad
     { id: "verify", label: "Verificar", icon: Smartphone },
     { id: "backup", label: "Respaldo", icon: KeyRound },
   ];
@@ -123,7 +166,7 @@ export const TwoFactorSetupModal = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent 
         className="sm:max-w-[500px] p-0 overflow-hidden gap-0 max-h-[90vh] flex flex-col rounded-xl"
-        onInteractOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()} // Evita cerrar al dar clic fuera por accidente
       >
         <DialogHeader className="space-y-4 pt-6 px-6">
           <div className="flex items-center gap-3">
@@ -182,12 +225,27 @@ export const TwoFactorSetupModal = ({
 
         <div className="flex-1 overflow-y-auto bg-stone-50 dark:bg-stone-900/50">
           <div className="p-6">
+            
             {/* Paso 1: QR Code */}
             {step === "qr" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="text-center space-y-4">
                         <div className="p-4 bg-white rounded-xl border border-stone-100 shadow-sm inline-block mx-auto dark:bg-stone-900 dark:border-stone-800">
-                            <QrCode className="h-32 w-32 text-stone-800 dark:text-stone-200" />
+                            {/* LÓGICA DE CARGA DEL QR */}
+                            {isLoading || !qrUrl ? (
+                                <div className="h-32 w-32 flex items-center justify-center">
+                                    <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+                                </div>
+                            ) : (
+                                <div className="h-32 w-32">
+                                    <QRCode 
+                                        value={qrUrl} 
+                                        size={128} 
+                                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                        viewBox={`0 0 128 128`}
+                                    />
+                                </div>
+                            )}
                         </div>
                         <p className="text-sm text-stone-600 dark:text-stone-400 max-w-[280px] mx-auto leading-relaxed">
                             Escanea el código QR con tu aplicación autenticadora (Google Authenticator, Authy).
@@ -197,13 +255,14 @@ export const TwoFactorSetupModal = ({
                     <div className="bg-stone-100/50 p-3 rounded-lg border border-stone-200/50 flex flex-col items-center gap-2 dark:bg-stone-900 dark:border-stone-800 text-center">
                          <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">¿No puedes escanear?</span>
                          <code className="text-sm font-mono text-stone-700 font-bold break-all dark:text-stone-300 select-all px-2">
-                            {secretKey}
+                            {secretKey || "Cargando..."}
                          </code>
                          <Button 
                             variant="ghost" 
                             size="sm" 
                             className="h-7 text-xs text-teal-600 hover:text-teal-700 hover:bg-teal-50 w-full"
                             onClick={() => copyToClipboard(secretKey, "Clave secreta copiada")}
+                            disabled={!secretKey}
                         >
                             <Copy className="h-3 w-3 mr-1.5" /> Copiar clave manual
                         </Button>
@@ -261,11 +320,15 @@ export const TwoFactorSetupModal = ({
 
                     <div className="bg-stone-100/50 border border-stone-200/50 rounded-xl p-4 dark:bg-stone-900 dark:border-stone-800">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-center">
-                            {backupCodes.map((code, i) => (
-                                <div key={i} className="bg-white p-1.5 rounded-md font-mono text-sm text-stone-600 font-medium tracking-wide border border-stone-200 select-all dark:bg-stone-950 dark:text-stone-400 dark:border-stone-800">
-                                    {code}
-                                </div>
-                            ))}
+                            {backupCodes.length > 0 ? (
+                                backupCodes.map((code, i) => (
+                                    <div key={i} className="bg-white p-1.5 rounded-md font-mono text-sm text-stone-600 font-medium tracking-wide border border-stone-200 select-all dark:bg-stone-950 dark:text-stone-400 dark:border-stone-800">
+                                        {code}
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-xs text-stone-500 col-span-2">Cargando códigos...</p>
+                            )}
                         </div>
                     </div>
 
@@ -308,6 +371,7 @@ export const TwoFactorSetupModal = ({
                     <Button 
                         className="flex-1 bg-teal-600 hover:bg-teal-700 text-white" 
                         onClick={() => setStep("verify")}
+                        disabled={isLoading || !qrUrl} // No deja avanzar si no hay QR
                     >
                         Siguiente <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -345,9 +409,8 @@ export const TwoFactorSetupModal = ({
                 <Button 
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-600/20"
                     onClick={handleComplete}
-                    disabled={isLoading}
                 >
-                    {isLoading ? "Activando..." : "He guardado los códigos y activar"}
+                    He guardado los códigos y terminar
                 </Button>
             )}
         </div>

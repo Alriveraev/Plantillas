@@ -44,7 +44,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // 2. Límite de Login (Anti-Fuerza Bruta)
-        // Permite solo 5 intentos por minuto.e
+        // Permite solo 15 intentos por minuto.e
         // Bloquea por IP para detener bots que prueban muchas cuentas desde el mismo sitio.
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(15)

@@ -12,6 +12,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasUuids;
 
+    use HasApiTokens, HasFactory, Notifiable, HasUuids;
+
     protected $fillable = [
         'name',
         'email',
@@ -20,6 +22,7 @@ class User extends Authenticatable
         'is_active',
         'google2fa_secret',
         'two_factor_confirmed_at',
+        'two_factor_recovery_codes', // <--- AGREGAR ESTO QUE FALTABA
         'last_login_at',
         'last_ip'
     ];
@@ -28,17 +31,18 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'google2fa_secret',
+        'two_factor_recovery_codes' // <--- OCULTAR ESTO POR SEGURIDAD
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-            'is_active' => 'boolean',
-            'two_factor_confirmed_at' => 'datetime',
-            'last_login_at' => 'datetime',
-        ];
-    }
+    // Usamos la propiedad $casts estándar para asegurar compatibilidad
+    protected $casts = [
+        'password' => 'hashed',
+        'is_active' => 'boolean',
+        'two_factor_confirmed_at' => 'datetime',
+        'last_login_at' => 'datetime',
+    ];
+
+
 
     public function role()
     {
@@ -50,7 +54,7 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
-    // Helper: Verifica si el usuario tiene el 2FA completamente activado
+    // Helper Robustecido
     public function hasEnabledTwoFactorAuthentication(): bool
     {
         return !is_null($this->two_factor_confirmed_at);

@@ -261,7 +261,7 @@ export const ProfilePage = () => {
                   </div>
 
                   <TwoFactorCard
-                    isEnabled={!!user.two_factor_enabled}
+                    isEnabled={!!user.security.two_factor_enabled}
                     onEnable={() => setIsTwoFactorModalOpen(true)}
                     onDisable={() => setIsDisable2FAAlertOpen(true)}
                     onChangeMethod={() =>

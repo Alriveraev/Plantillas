@@ -7,9 +7,13 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use PragmaRX\Google2FA\Google2FA;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Contracts\Encryption\DecryptException;
 
 class AuthController extends Controller
 {
@@ -85,40 +89,104 @@ class AuthController extends Controller
      */
     public function verifyTwoFactor(Request $request)
     {
+        // Validamos: permitimos 6 dígitos (TOTP) o más (Recovery Code)
         $request->validate([
-            'code' => ['required', 'string', 'size:6'], // Códigos TOTP estándar
+            'code' => ['required', 'string'],
         ]);
 
         $user = Auth::user();
 
-        // Seguridad: Si el usuario no tiene 2FA activo en DB, no debería estar aquí.
         if (!$user || !$user->two_factor_confirmed_at) {
             return response()->json(['message' => 'Doble factor no configurado.'], 400);
         }
 
+        // Rate Limiting
+        $throttleKey = '2fa_verify_attempts_' . $user->id;
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $this->forceLogout($request);
+            return response()->json([
+                'message' => 'Demasiados intentos fallidos. Por seguridad, hemos cerrado tu sesión.'
+            ], 429);
+        }
+
         $google2fa = new Google2FA();
+        $isValid = false;
+        $usingRecoveryCode = false;
 
-        // Verificamos el código contra el secreto desencriptado del usuario
-        // El parámetro '1' permite un desfase de tiempo de +/- 30 segundos (window)
-        $valid = $google2fa->verifyKey($user->google2fa_secret, $request->code, 1);
+        // ----------------------------------------------------------------------
+        // LÓGICA HÍBRIDA: TOTP o Recovery Code
+        // ----------------------------------------------------------------------
 
-        if ($valid) {
-            // Validación Exitosa
+        // A) ¿Es un código de recuperación? (> 6 caracteres)
+        if (strlen($request->code) > 6) {
+            try {
+                // Usamos el helper decrypt() o Crypt::decryptString()
+                $recoveryCodes = json_decode(decrypt($user->two_factor_recovery_codes), true) ?? [];
+
+                if (in_array($request->code, $recoveryCodes)) {
+                    $isValid = true;
+                    $usingRecoveryCode = true;
+
+                    // Eliminar el código usado
+                    $recoveryCodes = array_values(array_diff($recoveryCodes, [$request->code]));
+                    $user->two_factor_recovery_codes = encrypt(json_encode($recoveryCodes));
+                    $user->save();
+                }
+            } catch (\Exception $e) {
+                // Si falla la desencriptación de recovery codes, ignoramos y isValid queda false
+            }
+        }
+        // B) Es un código TOTP normal (6 dígitos)
+        else {
+            $cacheKey = '2fa_used_' . $user->id . '_' . $request->code;
+
+            if (Cache::has($cacheKey)) {
+                return response()->json(['message' => 'Este código ya fue utilizado.'], 422);
+            }
+
+            try {
+                // CORRECCIÓN AQUÍ: Desencriptamos el secreto antes de validarlo
+                $secret = Crypt::decryptString($user->google2fa_secret);
+
+                // Verificamos con el secreto desencriptado
+                $isValid = $google2fa->verifyKey($secret, $request->code, 1);
+            } catch (DecryptException $e) {
+                // Si el secreto en DB no estaba encriptado (legacy) o está corrupto
+                return response()->json(['message' => 'Error de seguridad en credenciales.'], 500);
+            }
+
+            if ($isValid) {
+                Cache::put($cacheKey, true, 60);
+            }
+        }
+
+        // ----------------------------------------------------------------------
+        // RESULTADO
+        // ----------------------------------------------------------------------
+        if ($isValid) {
+            RateLimiter::clear($throttleKey);
+
             $request->session()->forget('auth.2fa_pending');
             $request->session()->put('auth.2fa_verified', true);
 
-            // Completamos auditoría y regeneración de sesión
             $this->completeLogin($request, $user);
 
             return response()->json([
                 'message' => 'Verificación exitosa.',
+                'recovery_code_used' => $usingRecoveryCode,
                 'user' => new UserResource($user->load('role.permissions')),
             ]);
         }
 
-        return response()->json(['message' => 'El código proporcionado es inválido o ha expirado.'], 422);
-    }
+        RateLimiter::hit($throttleKey, 300);
+        $remaining = RateLimiter::remaining($throttleKey, 5);
 
+        return response()->json([
+            'message' => 'Código inválido.',
+            'attempts_remaining' => $remaining
+        ], 422);
+    }
     /**
      * Cerrar Sesión (Logout)
      */

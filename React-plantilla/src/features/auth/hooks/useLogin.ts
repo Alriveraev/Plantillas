@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { AxiosError } from "axios";
-import { authService } from "../services/auth.service";
+import { authService } from "../services/auth.service"; // Tu servicio
 import { useAuthStore } from "../store/authStore";
-import type { LoginRequest } from "@/api/types";
+import type { LoginCredentials } from "@/api/types"; // Usamos tus tipos
 import { toast } from "sonner";
 
 interface ErrorResponse {
@@ -15,25 +15,29 @@ export const useLogin = () => {
   const { setAuth } = useAuthStore();
 
   return useMutation({
-    mutationFn: (credentials: LoginRequest) => authService.login(credentials),
+    // Usamos el servicio oficial
+    mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
 
     onSuccess: (data) => {
+      // CASO 1: El backend pide 2FA
+      // No hacemos nada aquí, el componente LoginForm detectará esto
+      // y cambiará la vista.
       if (data.require_2fa) {
-        toast.info("Se requiere código de verificación.");
-        navigate("/auth/verify-2fa");
         return;
       }
 
+      // CASO 2: Login Exitoso directo (Sin 2FA)
       if (data.user) {
         setAuth(data.user);
         toast.success(
-          `Hola ${data?.user?.profile?.first_name}, has iniciado sesión correctamente.`
+          `Hola ${data?.user?.profile?.first_name || 'Usuario'}, has iniciado sesión correctamente.`
         );
         navigate("/dashboard");
       }
     },
 
     onError: (error: AxiosError<ErrorResponse>) => {
+      // Ignoramos 422 si lo usas para validaciones de formulario específicas en Formik
       if (error.response?.status !== 422) {
         toast.error(error.response?.data?.message || "Error al iniciar sesión");
       }
