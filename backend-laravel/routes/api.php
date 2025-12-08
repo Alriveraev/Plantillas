@@ -75,6 +75,7 @@ Route::middleware(['auth:sanctum', 'active', 'throttle:api'])->group(function ()
 
             // Cerrar otras sesiones.
             Route::post('/logout-others', [AuthController::class, 'logoutOthers']);
+            Route::get('/sessions', [ProfileController::class, 'sessions']);
         });
 
         // ----------------------------------------------------------------------

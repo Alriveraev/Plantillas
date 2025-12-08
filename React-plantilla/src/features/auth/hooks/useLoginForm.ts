@@ -4,8 +4,9 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { toFormikValidationSchema } from "@/shared/utils/formik-zod";
 
-// Imports de dominio
-import { loginSchema, type LoginCredentials } from "../schemas";
+import { loginSchema } from "../schemas";
+import type { LoginCredentials } from "@/api/types";
+
 import { useLogin } from "./useLogin";
 import { useLogout } from "./useLogout";
 import { authService } from "../services/auth.service";
@@ -31,13 +32,11 @@ export const useLoginForm = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
- 
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/dashboard", { replace: true });
     }
   }, [isAuthenticated, navigate]);
-
 
   // --- Manejador de Login (Paso 1) ---
   const formik = useFormik<LoginCredentials>({
@@ -57,10 +56,7 @@ export const useLoginForm = () => {
               setShowTwoFactor(true);
               toast.info("Ingresa el código de tu autenticador.");
             }
-            // Nota: Si el login es exitoso directo, el hook useLogin maneja la redirección
           },
-          // Si el login falla por sesión sucia (419), el usuario simplemente
-          // volverá a dar click y getCsrfCookie lo arreglará.
         }
       );
     },

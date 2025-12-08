@@ -17,7 +17,20 @@ class UpdatePasswordRequest extends FormRequest
         return [
             // 'current_password' es una regla nativa de Laravel 9+ muy segura
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'password' => [
+                'required',
+                'confirmed',
+                Password::defaults(),
+                'different:current_password'
+            ],
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'current_password' => 'contraseña actual',
+            'password' => 'nueva contraseña',
         ];
     }
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { UserRole } from "@/api/types/auth.types";
+import { useSessions } from "@/features/profile/hooks/useSessions"; // ✅ Hook importado
 
 // Components
 import {
@@ -28,23 +29,6 @@ import { cn } from "@/lib/utils";
 import { User, Shield, Fingerprint, Activity, Lock } from "lucide-react";
 
 // --- HELPERS ---
-const mockLoginHistory = [
-  {
-    id: "1",
-    date: "Hoy",
-    time: "14:32",
-    browser: "Chrome en Windows",
-    location: "Madrid, ES",
-  },
-  {
-    id: "2",
-    date: "Ayer",
-    time: "09:15",
-    browser: "Safari en iOS",
-    location: "Barcelona, ES",
-  },
-];
-
 const ROLE_LABELS: Record<string, string> = {
   [UserRole.ADMIN]: "Administrador",
   [UserRole.MODERATOR]: "Moderador",
@@ -57,17 +41,21 @@ type VerifyAction = "change-method" | "change-device" | "view-backup-codes";
 export const ProfilePage = () => {
   const { user } = useAuth();
 
+  // ✅ 1. CONSUMIR SERVICIO GET (Sesiones activas)
+  // useSessions se encarga de cargar la data al montar la vista
+  const { data: sessions = [], isLoading: isLoadingSessions } = useSessions();
+
+  // ✅ 2. CÁLCULO DINÁMICO
+  // Contamos cuántas sesiones hay que NO son la actual para la alerta
+  const otherSessionsCount = sessions.filter((s) => !s.is_current_device).length;
+
   // --- States ---
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
-    useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isTwoFactorModalOpen, setIsTwoFactorModalOpen] = useState(false);
-  const [isCloseSessionsAlertOpen, setIsCloseSessionsAlertOpen] =
-    useState(false);
+  const [isCloseSessionsAlertOpen, setIsCloseSessionsAlertOpen] = useState(false);
   const [isDisable2FAAlertOpen, setIsDisable2FAAlertOpen] = useState(false);
-  const [isVerifyPasswordModalOpen, setIsVerifyPasswordModalOpen] =
-    useState(false);
-  const [isViewBackupCodesModalOpen, setIsViewBackupCodesModalOpen] =
-    useState(false);
+  const [isVerifyPasswordModalOpen, setIsVerifyPasswordModalOpen] = useState(false);
+  const [isViewBackupCodesModalOpen, setIsViewBackupCodesModalOpen] = useState(false);
 
   const [pendingAction, setPendingAction] = useState<VerifyAction | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -113,7 +101,7 @@ export const ProfilePage = () => {
   if (!user) return null;
 
   return (
-    <div className="space-y-6 p-4 pb-16 md:pb-16 animate-in fade-in duration-500 w-full mx-auto">
+    <div className="space-y-6 p-2 pb-16 md:pb-16 animate-in fade-in duration-500 w-full mx-auto">
       {/* Header */}
       <div className="space-y-0.5">
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50">
@@ -163,11 +151,8 @@ export const ProfilePage = () => {
 
         {/* Content Area */}
         <div className="flex-1 ">
-          {" "}
-          {/* Ancho máximo aumentado para este layout */}
           {/* === TAB GENERAL === */}
           <TabsContent value="general" className="space-y-6 mt-0">
-            {/* ... (Sin cambios aquí, mantienes tu diseño de perfil actual) ... */}
             <div className="hidden md:block">
               <h3 className="text-lg font-medium">Perfil</h3>
               <p className="text-sm text-muted-foreground">
@@ -197,7 +182,8 @@ export const ProfilePage = () => {
             <Separator className="md:hidden mb-6" />
             <ProfileForm user={user} />
           </TabsContent>
-          {/* === TAB SEGURIDAD (NUEVO DISEÑO ASIMÉTRICO) === */}
+
+          {/* === TAB SEGURIDAD === */}
           <TabsContent value="security" className="mt-0 space-y-6 ">
             <div className="hidden md:block">
               <h3 className="text-lg font-medium">Seguridad</h3>
@@ -207,8 +193,8 @@ export const ProfilePage = () => {
               <Separator className="my-4" />
             </div>
 
-            {/* GRID PRINCIPAL: 2 Columnas Asimétricas (2/3 + 1/3) */}
-            <div className="grid gap-6 xl:grid-cols-2">
+            {/* GRID PRINCIPAL */}
+            <div className="md:grid gap-6 xl:grid-cols-2">
               {/* COLUMNA IZQUIERDA (Principal - Actividad) */}
               <div className="lg:col-span-1 space-y-6 w-full">
                 <div className="flex items-center gap-2 text-stone-500 ">
@@ -217,7 +203,7 @@ export const ProfilePage = () => {
                     Monitor de Actividad
                   </h4>
                 </div>
-                {/* Nota informativa extra (Opcional) */}
+
                 <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                   <p className="flex items-center gap-2 font-semibold">
                     <Shield className="h-4 w-4" />
@@ -228,11 +214,11 @@ export const ProfilePage = () => {
                     contraseña desde el panel lateral.
                   </p>
                 </div>
-                {/* Tarjeta de Actividad (Grande) */}
+
+                {/* ✅ 3. PASAMOS DATOS REALES AL COMPONENTE */}
                 <SecurityGeneralCard
-                  lastLogin={user.updatedAt || "Reciente"}
-                  loginHistory={mockLoginHistory}
-                  sessionCount={1}
+                  sessions={sessions}
+                  isLoading={isLoadingSessions}
                   onCloseAllSessions={() => setIsCloseSessionsAlertOpen(true)}
                 />
               </div>
@@ -246,10 +232,9 @@ export const ProfilePage = () => {
                   </h4>
                 </div>
 
-                {/* Stack de Acciones Vertical */}
                 <div className="flex flex-col gap-4 ">
                   <ChangePasswordCard
-                    lastChanged="Desconocido"
+                    lastChanged={user.updatedAt || "Reciente"}
                     onChangePassword={() => setIsChangePasswordModalOpen(true)}
                   />
 
@@ -261,7 +246,7 @@ export const ProfilePage = () => {
                   </div>
 
                   <TwoFactorCard
-                    isEnabled={!!user.security.two_factor_enabled}
+                    isEnabled={!!user.security?.two_factor_enabled}
                     onEnable={() => setIsTwoFactorModalOpen(true)}
                     onDisable={() => setIsDisable2FAAlertOpen(true)}
                     onChangeMethod={() =>
@@ -291,10 +276,11 @@ export const ProfilePage = () => {
         onOpenChange={setIsTwoFactorModalOpen}
         onSuccess={handle2FASuccess}
       />
+      {/* ✅ 4. ALERTA CON CONTEO REAL */}
       <CloseSessionsAlert
         open={isCloseSessionsAlertOpen}
         onOpenChange={setIsCloseSessionsAlertOpen}
-        sessionCount={1}
+        sessionCount={otherSessionsCount}
       />
       <Disable2FAAlert
         open={isDisable2FAAlertOpen}

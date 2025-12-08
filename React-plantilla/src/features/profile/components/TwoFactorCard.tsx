@@ -84,7 +84,7 @@ export const TwoFactorCard = ({
             </div>
 
             {/* 3. Acciones Secundarias (Grid: 1 col móvil, 2 cols desktop) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1  gap-3">
               <Button
                 variant="outline"
                 className="justify-between group h-auto py-3 border-stone-200 hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-800"
@@ -118,7 +118,7 @@ export const TwoFactorCard = ({
             <div className="pt-2 flex justify-center sm:justify-start">
               <Button
                 variant="ghost"
-                className="h-auto p-0 text-xs text-red-500 hover:text-red-600 hover:bg-transparent"
+                className="h-auto p-0 text-xs text-red-500 hover:text-red-600 hover:bg-transparent cursor-pointer"
                 onClick={onDisable}
                 disabled={isLoading}
               >

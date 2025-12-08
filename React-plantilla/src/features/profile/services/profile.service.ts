@@ -26,6 +26,16 @@ export interface PasswordConfirmationPayload {
   password: string;
 }
 
+export interface SessionDevice {
+  agent: {
+    platform: string;
+    browser: string;
+    string: string; // "Chrome en Windows"
+  };
+  ip_address: string;
+  is_current_device: boolean;
+  last_active: string; // "Hace 1 hora"
+}
 // ==========================================
 // Servicio Profile (Perfil + Seguridad)
 // ==========================================
@@ -163,5 +173,12 @@ export const profileService = {
       { password }
     );
     return data;
+  },
+
+  getSessions: async () => {
+    const { data } = await api.get<{ sessions: SessionDevice[] }>(
+      "/user/security/sessions"
+    );
+    return data.sessions;
   },
 };

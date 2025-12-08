@@ -1,21 +1,22 @@
 import { useMutation } from "@tanstack/react-query";
-import type { ChangePasswordRequest } from "@/api/endpoints";
-import { profileApi } from "@/api/endpoints";
+import { profileService } from "@/features/profile/services/profile.service";
+import type { UpdatePasswordData } from "@/features/profile/services/profile.service";
+
 import { toast } from "sonner";
 
 export const useChangePassword = () => {
   return useMutation({
-    mutationFn: (data: ChangePasswordRequest) =>
-      profileApi.changePassword(data),
-    onSuccess: () => {
-      toast("Contraseña actualizada", {
-        description: "Tu contraseña ha sido cambiada exitosamente.",
-      });
+    mutationFn: (data: UpdatePasswordData) =>
+      profileService.updatePassword(data),
+    onSuccess: (data) => {
+      toast.success(data.message || "Contraseña actualizada correctamente");
     },
     onError: (error: any) => {
-      toast.error("Error al Cambiar contraseña", {
-        description:
-          error.response?.data?.message || "La contraseña actual es incorrecta",
+      // Manejo robusto de errores de Laravel (422 o 403)
+      const message =
+        error.response?.data?.message || "Error al actualizar la contraseña";
+      toast.error("Error de seguridad", {
+        description: message,
       });
     },
   });

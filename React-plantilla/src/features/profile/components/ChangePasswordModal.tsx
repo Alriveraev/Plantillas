@@ -1,12 +1,13 @@
 import { useCallback, useState } from "react";
 import { useFormik } from "formik";
-import { toFormikValidationSchema } from "@/shared/utils/formik-zod";
-import { KeyRound, Sparkles, Check, ShieldCheck } from "lucide-react";
+import { toFormikValidationSchema } from "@/shared/utils/formik-zod"; // Asegúrate de tener este utilitario o usa z.formik adapter
+import { KeyRound, Sparkles, Check, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ChangePasswordFormData } from "../schemas";
 import { changePasswordSchema } from "../schemas";
-import { useChangePassword } from "../hooks";
+
+import { useChangePassword } from "../hooks/useChangePassword";
 
 // UI Components
 import {
@@ -19,8 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { PasswordInput } from "@/components/password-input";
-import { FormError } from "@/shared/components/forms";
+import { PasswordInput } from "@/components/password-input"; // Tu componente personalizado
+import { FormError } from "@/shared/components/forms"; // Tu componente de error
 import { cn } from "@/lib/utils";
 
 interface ChangePasswordModalProps {
@@ -33,9 +34,13 @@ export const ChangePasswordModal = ({
   onOpenChange,
 }: ChangePasswordModalProps) => {
   const { mutate: changePassword, isPending } = useChangePassword();
-
-  // Estado para controlar externamente la visibilidad de la nueva contraseña
   const [showNewPassword, setShowNewPassword] = useState(false);
+
+  const handleClose = () => {
+    formik.resetForm();
+    setShowNewPassword(false);
+    onOpenChange(false);
+  };
 
   const formik = useFormik<ChangePasswordFormData>({
     initialValues: {
@@ -43,20 +48,23 @@ export const ChangePasswordModal = ({
       newPassword: "",
       confirmPassword: "",
     },
-    validate: toFormikValidationSchema(changePasswordSchema),
-    validateOnChange: true,
+    validate: toFormikValidationSchema(changePasswordSchema), // Corrección aquí: propiedad validationSchema
     validateOnBlur: true,
+    validateOnChange: true,
     onSubmit: (values) => {
+      // =========================================================
+      // CRÍTICO: Mapeo de Frontend (camelCase) a Backend (snake_case)
+      // =========================================================
       changePassword(
         {
-          currentPassword: values.currentPassword,
-          newPassword: values.newPassword,
-          newPasswordConfirmation: values.confirmPassword,
+          current_password: values.currentPassword,
+          password: values.newPassword,
+          password_confirmation: values.confirmPassword,
         },
         {
           onSuccess: () => {
             handleClose();
-            toast.success("Contraseña actualizada correctamente");
+            // El toast de éxito ya está en el hook, no lo duplicamos aquí
           },
         }
       );
@@ -96,14 +104,7 @@ export const ChangePasswordModal = ({
     // LÓGICA CLAVE: Forzamos que se muestre la contraseña al generarla
     setShowNewPassword(true);
   }, [formik]);
-
-  const handleClose = () => {
-    formik.resetForm();
-    setShowNewPassword(false); // Reseteamos la visibilidad al cerrar
-    onOpenChange(false);
-  };
-
-  // Validaciones visuales en tiempo real
+  // Helpers visuales
   const checkRequirement = (regex: RegExp) =>
     regex.test(formik.values.newPassword);
   const isLengthValid = formik.values.newPassword.length >= 8;
@@ -121,8 +122,8 @@ export const ChangePasswordModal = ({
             </DialogTitle>
           </div>
           <DialogDescription>
-            Por seguridad, se cerrará tu sesión en otros dispositivos al
-            realizar este cambio.
+            Asegúrate de usar una contraseña segura. Se cerrará la sesión en
+            otros dispositivos.
           </DialogDescription>
         </DialogHeader>
 
@@ -140,12 +141,9 @@ export const ChangePasswordModal = ({
             <FormError name="currentPassword" formik={formik} />
           </div>
 
-          <div
-            className="border-t border-border/50 my-3
-          "
-          />
+          <div className="border-t border-border/50 my-3" />
 
-          {/* Nueva Contraseña (CONTROLADA) */}
+          {/* Nueva Contraseña */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="newPassword">Nueva contraseña</Label>
@@ -158,11 +156,10 @@ export const ChangePasswordModal = ({
                 disabled={isPending}
               >
                 <Sparkles className="h-3 w-3 mr-1.5" />
-                Generar constraseña segura
+                Generar contraseña segura
               </Button>
             </div>
 
-            {/* Input controlado por el estado del modal */}
             <PasswordInput
               id="newPassword"
               placeholder="Nueva contraseña segura"
@@ -183,6 +180,9 @@ export const ChangePasswordModal = ({
               placeholder="Repite la nueva contraseña"
               autoComplete="new-password"
               disabled={isPending}
+              // Heredamos la visibilidad del input anterior para mejor UX
+              showPassword={showNewPassword}
+              onTogglePassword={setShowNewPassword}
               {...formik.getFieldProps("confirmPassword")}
             />
             <FormError name="confirmPassword" formik={formik} />
@@ -226,9 +226,16 @@ export const ChangePasswordModal = ({
             <Button
               type="submit"
               disabled={isPending || !formik.isValid || !formik.dirty}
-              className="bg-teal-600 hover:bg-teal-700 text-white"
+              className="bg-teal-600 hover:bg-teal-700 text-white min-w-[140px]"
             >
-              {isPending ? "Actualizando..." : "Actualizar contraseña"}
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Actualizando...
+                </>
+              ) : (
+                "Actualizar contraseña"
+              )}
             </Button>
           </DialogFooter>
         </form>
@@ -237,7 +244,7 @@ export const ChangePasswordModal = ({
   );
 };
 
-// Subcomponente para los items de la lista de requisitos
+// Subcomponente optimizado con memo si fuera necesario, pero simple aquí está bien
 const RequirementItem = ({
   isValid,
   text,

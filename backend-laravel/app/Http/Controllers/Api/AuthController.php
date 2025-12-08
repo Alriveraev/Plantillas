@@ -226,8 +226,7 @@ class AuthController extends Controller
 
         // Esta función de Laravel invalida todas las sesiones en la tabla 'sessions'
         // que pertenezcan a este usuario, EXCEPTO la actual.
-        Auth::logoutOtherDevices($request->password);
-
+        Auth::guard('web')->logoutOtherDevices($request->password);
         return response()->json(['message' => 'Se han cerrado las sesiones en todos los demás dispositivos.']);
     }
 
