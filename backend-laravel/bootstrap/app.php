@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
+use App\Http\Middleware\DecryptHybridPayload; // <--- 1. IMPORTANTE: Importamos la clase
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,14 +17,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // 1. Habilitar soporte para Sanctum SPA (Cookies)
+        // Habilitar soporte para Sanctum SPA (Cookies)
         $middleware->statefulApi();
 
-        $middleware->api(append: [
-            \App\Http\Middleware\ApiLogger::class,
-        ]);
+        // 2. IMPORTANTE: Configuramos la pila API
+        // Usamos 'prepend' para el Decrypt (se ejecuta PRIMERO)
+        // Usamos 'append' para el Logger (se ejecuta al final)
+        $middleware->api(
+            prepend: [
+                DecryptHybridPayload::class, // <-- AQUÍ ESTÁ LA MAGIA (Desencripta antes de validar)
+            ],
+            append: [
+                \App\Http\Middleware\ApiLogger::class,
+            ]
+        );
 
-        // 2. Registrar Alias de Middlewares
+        // Registrar Alias de Middlewares
         $middleware->alias([
             'active' => \App\Http\Middleware\EnsureUserIsActive::class,
             '2fa' => \App\Http\Middleware\EnsureTwoFactorIsEnabled::class,
@@ -33,7 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
     ->withExceptions(function (Exceptions $exceptions) {
 
-        // 1. Forzar JSON siempre en rutas API (evita HTML en errores)
+        // 1. Forzar JSON siempre en rutas API
         $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
             if ($request->is('api/*')) {
                 return true;
@@ -42,7 +50,6 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // 2. Personalizar Error 404 (Not Found)
-        // Esto maneja cuando buscas un ID que no existe (Route Model Binding)
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -54,13 +61,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // 3. Personalizar Errores HTTP Generales (403, 401, etc.)
-        // Atrapamos 'HttpException' para capturar tanto los errores de Policies
-        // como los 'abort(403, "Mensaje")' manuales.
         $exceptions->render(function (HttpException $e, Request $request) {
             if ($request->is('api/*')) {
                 $statusCode = $e->getStatusCode();
 
-                // Usamos el mensaje personalizado si existe, si no, uno por defecto
                 $message = $e->getMessage();
 
                 if (empty($message)) {
