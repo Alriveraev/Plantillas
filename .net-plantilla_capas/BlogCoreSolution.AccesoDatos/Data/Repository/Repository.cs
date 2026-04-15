@@ -1,11 +1,11 @@
-﻿using BlogCoreSolution.AccesoDatos.Data.Repository.IRepository;
+﻿using BlogCoreSolution.DataAccess.Data.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace BlogCoreSolution.AccesoDatos.Data.Repository
+namespace BlogCoreSolution.DataAccess.Data.Repository
 {
     public class Repository<T> : IRepository<T> where T : class
     {

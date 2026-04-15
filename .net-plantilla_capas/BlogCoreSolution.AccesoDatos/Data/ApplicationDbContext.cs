@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace BlogCoreSolution.AccesoDatos.Data
+namespace BlogCoreSolution.DataAccess.Data
 {
     public class ApplicationDbContext : IdentityDbContext
     {

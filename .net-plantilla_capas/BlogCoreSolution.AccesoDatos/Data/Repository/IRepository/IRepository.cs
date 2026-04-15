@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace BlogCoreSolution.AccesoDatos.Data.Repository.IRepository
+namespace BlogCoreSolution.DataAccess.Data.Repository.IRepository
 {
     public interface IRepository<T> where T : class
     {
