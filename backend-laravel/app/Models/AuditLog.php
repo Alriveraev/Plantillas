@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\MassPrunable;
+use App\Traits\BelongsToBusiness; // <-- AGREGAR
 
 class AuditLog extends Model
 {
-    use HasUuids, MassPrunable;
+    use HasUuids, MassPrunable, BelongsToBusiness; // <-- AGREGAR TRAIT
 
     protected $fillable = [
+        'business_id', // <-- AGREGAR
         'user_id',
         'method',
         'url',

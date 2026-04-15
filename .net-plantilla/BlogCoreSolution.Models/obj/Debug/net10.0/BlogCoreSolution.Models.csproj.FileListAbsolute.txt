@@ -1,0 +1,11 @@
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\bin\Debug\net10.0\BlogCoreSolution.Models.deps.json
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\bin\Debug\net10.0\BlogCoreSolution.Models.dll
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\bin\Debug\net10.0\BlogCoreSolution.Models.pdb
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\BlogCoreSolution.Models.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\BlogCoreSolution.Models.AssemblyInfoInputs.cache
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\BlogCoreSolution.Models.AssemblyInfo.cs
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\BlogCoreSolution.Models.csproj.CoreCompileInputs.cache
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\BlogCoreSolution.Models.dll
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\refint\BlogCoreSolution.Models.dll
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\BlogCoreSolution.Models.pdb
+C:\Users\alriv\source\repos\BlogCoreSolution\BlogCoreSolution.Models\obj\Debug\net10.0\ref\BlogCoreSolution.Models.dll

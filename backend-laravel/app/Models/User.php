@@ -12,9 +12,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasUuids;
 
-    use HasApiTokens, HasFactory, Notifiable, HasUuids;
-
     protected $fillable = [
+        'business_id', // Para el SaaS
         'name',
         'email',
         'password',
@@ -22,7 +21,7 @@ class User extends Authenticatable
         'is_active',
         'google2fa_secret',
         'two_factor_confirmed_at',
-        'two_factor_recovery_codes', // <--- AGREGAR ESTO QUE FALTABA
+        'two_factor_recovery_codes',
         'last_login_at',
         'last_ip'
     ];
@@ -31,10 +30,9 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'google2fa_secret',
-        'two_factor_recovery_codes' // <--- OCULTAR ESTO POR SEGURIDAD
+        'two_factor_recovery_codes'
     ];
 
-    // Usamos la propiedad $casts estándar para asegurar compatibilidad
     protected $casts = [
         'password' => 'hashed',
         'is_active' => 'boolean',
@@ -42,36 +40,38 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
     ];
 
-
-
+    public function business()
+    {
+        return $this->belongsTo(Business::class);
+    }
+    public function staffMember()
+    {
+        return $this->hasOne(StaffMember::class);
+    }
     public function role()
     {
         return $this->belongsTo(Role::class);
     }
-
     public function profile()
     {
         return $this->hasOne(Profile::class);
     }
 
-    // Helper Robustecido
     public function hasEnabledTwoFactorAuthentication(): bool
     {
         return !is_null($this->two_factor_confirmed_at);
     }
 
-    // Helper: Verifica permiso a través del Rol
     public function hasPermission(string $permissionKey): bool
     {
         return $this->role?->permissions->contains('key', $permissionKey) ?? false;
     }
 
-
     protected static function booted()
     {
         static::created(function ($user) {
             $user->profile()->create([
-                'first_name' => $user->name, // Fallback inicial
+                'first_name' => $user->name,
                 'first_surname' => '',
             ]);
         });

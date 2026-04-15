@@ -13,15 +13,22 @@ class EnsureUserIsActive
     {
         $user = $request->user();
 
-        if ($user && !$user->is_active) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
+        if ($user) {
+            $isUserInactive = !$user->is_active;
+            $isBusinessInactive = $user->business_id && $user->business && !$user->business->is_active;
 
-            return response()->json([
-                'message' => 'Tu cuenta ha sido desactivada. Contacta al soporte.'
-            ], 403);
+            if ($isUserInactive || $isBusinessInactive) {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                $message = $isBusinessInactive
+                    ? 'La suscripción del negocio está inactiva.'
+                    : 'Tu cuenta ha sido desactivada. Contacta al soporte.';
+
+                return response()->json(['message' => $message, 'action' => 'logout_required'], 403);
+            }
         }
-
         return $next($request);
     }
 }

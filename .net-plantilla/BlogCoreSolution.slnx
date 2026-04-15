@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="BlogCore/BlogCore.csproj" />
+  <Project Path="BlogCoreSolution.AccesoDatos/BlogCoreSolution.DataAccess.csproj" />
+  <Project Path="BlogCoreSolution.Models/BlogCoreSolution.Models.csproj" />
+  <Project Path="BlogCoreSolution.Utilidades/BlogCoreSolution.Utilities.csproj" />
+</Solution>

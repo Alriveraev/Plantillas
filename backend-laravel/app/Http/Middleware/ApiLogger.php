@@ -53,8 +53,10 @@ class ApiLogger
 
             // 4. Guardar Log
             // Usamos $request->user('sanctum') para intentar obtener el usuario
+            $user = $request->user('sanctum');
             // incluso si la ruta falló, siempre que el token/cookie fuera válido.
             AuditLog::create([
+                'business_id' => $user?->business_id, // <-- AGREGAR ESTA LÍNEA
                 'user_id'     => $request->user('sanctum')?->id,
                 'method'      => $request->method(),
                 'url'         => $request->path(),
