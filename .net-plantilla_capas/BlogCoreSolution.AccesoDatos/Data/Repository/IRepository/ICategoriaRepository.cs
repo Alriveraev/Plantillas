@@ -8,6 +8,6 @@ namespace BlogCoreSolution.DataAccess.Data.Repository.IRepository
 {
     public interface ICategoriaRepository: IRepository<Categoria>
     {
-        void update(Categoria categoria);
+        void Update(Categoria categoria);
     }
 }

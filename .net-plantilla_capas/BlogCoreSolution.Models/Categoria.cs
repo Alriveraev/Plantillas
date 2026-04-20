@@ -7,6 +7,12 @@ namespace BlogCoreSolution.Models
 {
     public class Categoria
     {
+
+        public Categoria()
+        {
+            FechaCreacion = DateTime.Now;
+        }
+
         public int Id { get; set; }
 
         [Required(ErrorMessage = "El nombre es obligatorio")]
@@ -19,6 +25,8 @@ namespace BlogCoreSolution.Models
         public int Orden { get; set; }
 
         public DateTime FechaCreacion { get; set; }
+
+
 
     }
 }

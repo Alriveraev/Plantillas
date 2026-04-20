@@ -1,0 +1,51 @@
+﻿@model BlogCoreSolution.Models.Categoria
+
+@{
+    ViewData["Title"] = "Editar Categoría";
+}
+
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Editar Categoría</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            <form asp-action="Edit" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3 row">
+                    <label asp-for="Nombre" class="col-sm-4 col-form-label"></label>
+                    <div class="col-sm-8">
+                        <input asp-for="Nombre" class="form-control" placeholder="Ingrese el nombre de la categoría" />
+                        <span asp-validation-for="Nombre" class="text-danger d-block mt-1"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3 row">
+                    <label asp-for="Orden" class="col-sm-4 col-form-label"></label>
+                    <div class="col-sm-8">
+                        <input asp-for="Orden" type="number" class="form-control" placeholder="Ingrese el orden de la categoría" />
+                        <span asp-validation-for="Orden" class="text-danger d-block mt-1"></span>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col d-flex justify-content-center gap-3">
+                        <button type="submit" class="btn btn-success px-4">Actualizar</button>
+                        <a asp-action="Index" class="btn btn-secondary px-4">Cancelar</a>
+                    </div>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        // Agregamos la validación del lado del cliente de ASP.NET Core
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

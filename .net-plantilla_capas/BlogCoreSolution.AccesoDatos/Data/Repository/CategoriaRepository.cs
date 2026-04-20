@@ -16,7 +16,7 @@ namespace BlogCoreSolution.DataAccess.Data.Repository
             _db = db;
         }
 
-        public void update(Categoria categoria)
+        public void Update(Categoria categoria)
         {
             var objFromDb = _db.Categorias.FirstOrDefault(s => s.Id == categoria.Id);
             if (objFromDb != null)
