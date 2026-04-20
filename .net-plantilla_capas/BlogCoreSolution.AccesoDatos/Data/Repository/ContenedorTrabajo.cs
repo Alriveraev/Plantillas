@@ -12,9 +12,11 @@ namespace BlogCoreSolution.DataAccess.Data.Repository
         {
             _db = db;
             Categoria = new CategoriaRepository(_db);
+            Articulo = new ArticuloRepository(_db);
         }
 
         public ICategoriaRepository Categoria { get; private set; }
+        public IArticuloRepository Articulo { get; private set; }
 
         public void Save()
         {
