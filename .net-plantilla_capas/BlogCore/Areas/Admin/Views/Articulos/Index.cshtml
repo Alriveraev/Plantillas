@@ -1,0 +1,139 @@
+﻿@{
+    ViewData["Title"] = "Lista de Artículos";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary mb-0">Lista de Artículos</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Crear Nuevo Artículo
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tbArticulos" class="table table-striped table-hover table-bordered w-100">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Id</th>
+                            <th>Nombre</th>
+                            <th>Categoria</th>
+                            <th>Imagen</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // La variable debe inicializarse dentro del ready, apuntando a la tabla, no al documento
+        let dataTable;
+
+        $(document).ready(function () {
+            dataTable = $('#tbArticulos').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "/Admin/Articulos/GetAll",
+                    "type": "GET",
+                    "datatype": "json"
+                },
+                "columns": [
+                    { "data": "id", "width": "5%" },
+                    { "data": "nombre", "width": "20%" },
+                    { "data": "categoria", "width": "10%" },
+                    {
+                        "data": "urlImagen",
+                        "width": "20%",
+                        "render": function (imagen) {
+                            if(!imagen) return '';
+                            return `<img src="${imagen}" alt="Imagen" class="img-fluid" />`;
+                        }
+                    },
+                    {
+                        "data": "fechaCreacion",
+                        "width": "20%",
+                        "render": function (data) {
+                          if(!data) return '';
+                          return new Date(data).toLocaleDateString('es-ES', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                        }
+                    },
+                    {
+                        "data": "id",
+                        "render": function (data) {
+                            return `
+                                <div class="text-center d-flex justify-content-center gap-2">
+                                    <a href="/Admin/Articulos/Edit/${data}" class="btn btn-success btn-sm">
+                                        <i class="fa-solid fa-pen-to-square"></i> Editar
+                                    </a>
+                                    <button onclick="deleteArticulo('/Admin/Articulos/Delete/${data}')" class="btn btn-danger btn-sm">
+                                        <i class="fa-solid fa-trash"></i> Eliminar
+                                    </button>
+                                </div>
+                            `;
+                        },
+                        "width": "20%",
+                        "orderable": false // Evita que DataTables intente ordenar por la columna de botones
+                    }
+                ],
+                "language": {
+                    "decimal": "",
+                    "emptyTable": "No hay registros",
+                    "info": "Mostrando _START_ a _END_ de _TOTAL_ Entradas",
+                    "infoEmpty": "Mostrando 0 a 0 de 0 Entradas",
+                    "infoFiltered": "(Filtrado de _MAX_ total de entradas)",
+                    "infoPostFix": "",
+                    "thousands": ",",
+                    "lengthMenu": "Mostrar _MENU_ Entradas",
+                    "loadingRecords": "Cargando...",
+                    "processing": "Procesando...",
+                    "search": "Buscar:",
+                    "zeroRecords": "Sin resultados encontrados",
+                    "paginate": {
+                        "first": "Primero",
+                        "last": "Último",
+                        "next": "Siguiente",
+                        "previous": "Anterior"
+                    }
+                }
+            });
+        });
+
+
+        
+        function deleteArticulo(url) {
+            swal({
+                title: "Esta seguro de borrar?",
+                text: "Este contenido no se puede recuperar!",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "Si, borrar!",
+                closeOnconfirm: true
+            }, function () {
+                $.ajax({
+                    type: 'DELETE',
+                    url: url,
+                    success: function (data) {
+                        if (data.success) {
+                            toastr.success(data.message);
+                            dataTable.ajax.reload();
+                        }
+                        else {
+                            toastr.error(data.message);
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+}
