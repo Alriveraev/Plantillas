@@ -1,4 +1,5 @@
 ﻿using BlogCoreSolution.DataAccess.Data.Repository.IRepository;
+using BlogCoreSolution.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogCore.Areas.Admin.Controllers
@@ -18,6 +19,18 @@ namespace BlogCore.Areas.Admin.Controllers
         public IActionResult Index()
         {
             return View();
+        }
+
+        [HttpGet]
+        public IActionResult Create()
+        {
+            ArticuloVM articuloVM = new ArticuloVM()
+            {
+               Articulo = new BlogCoreSolution.Models.Articulo(),
+               ListaCategorias = _contenedorTrabajo.Categoria.GetListaCategorias(),
+            };
+
+            return View(articuloVM);
         }
 
 

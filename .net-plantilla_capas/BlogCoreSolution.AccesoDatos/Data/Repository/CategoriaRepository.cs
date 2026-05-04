@@ -2,6 +2,7 @@
 using BlogCoreSolution.DataAccess.Data.Repository;
 using BlogCoreSolution.DataAccess.Data.Repository.IRepository;
 using BlogCoreSolution.Models;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,6 +17,15 @@ namespace BlogCoreSolution.DataAccess.Data.Repository
             _db = db;
         }
 
+        public IEnumerable<SelectListItem> GetListaCategorias()
+        {
+            return _db.Categorias.Select(c => new SelectListItem
+            {
+                Text = c.Nombre,
+                Value = c.Id.ToString()
+            });
+        }
+
         public void Update(Categoria categoria)
         {
             var objFromDb = _db.Categorias.FirstOrDefault(s => s.Id == categoria.Id);
@@ -25,6 +35,5 @@ namespace BlogCoreSolution.DataAccess.Data.Repository
                 objFromDb.Orden = categoria.Orden;
             }
         }
-
     }
 }
