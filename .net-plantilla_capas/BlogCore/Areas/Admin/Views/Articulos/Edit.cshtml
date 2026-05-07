@@ -1,15 +1,17 @@
 ﻿@model BlogCoreSolution.Models.ViewModels.ArticuloVM
 
 @{
-    ViewData["Title"] = "Crear Artículo";
+    ViewData["Title"] = "Editar Artículo";
 }
 
 <div class="container mt-4">
-    <h2 class="text-center mb-4">Crear Artículo</h2>
+    <h2 class="text-center mb-4">Editar Artículo</h2>
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-md-8 col-lg-8">
             
-            <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <form asp-action="Edit" method="post" enctype="multipart/form-data">
+
+                <input type="hidden" asp-for="Articulo.Id" />
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                 <div class="mb-3 row">
@@ -39,18 +41,23 @@
                 <div class="mb-3 row">
                     <label asp-for="Articulo.UrlImagen" class="col-sm-4 col-form-label"></label>
                     <div class="col-sm-8">
-                        <input  type="file" class="form-control" name="archivos" id="subidaArchivo" />
+                        <input type="file" class="form-control" name="archivos" id="subidaArchivo" />
                         <span asp-validation-for="Articulo.UrlImagen" class="text-danger d-block mt-1"></span>
                     </div>
                 </div>
 
-                <div class="form-group-row">
-                    <div>
-                        <partial name="_VistaCrearVolver" />
+                <div class="row mt-4">
+                    <div class="col d-flex justify-content-center gap-3">
+                        <button type="submit" class="btn btn-success px-4">Actualizar</button>
+                        <a asp-action="Index" class="btn btn-secondary px-4">Cancelar</a>
                     </div>
                 </div>
             </form>
             
+        </div>
+
+        <div class="col-md-8 col-lg-4">
+            <img src="@Model.Articulo.UrlImagen" class="img-fluid" alt="Imagen del artículo" style="border-radius: 5px; border: 1px solid #bbb9b9;"/>
         </div>
     </div>
 </div>
@@ -60,6 +67,7 @@
     @{
         <partial name="_ValidationScriptsPartial" />
     }
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.css">
     <script src="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js"></script>
     <script>
