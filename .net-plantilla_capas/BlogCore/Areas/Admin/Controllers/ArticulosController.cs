@@ -86,6 +86,13 @@ namespace BlogCore.Areas.Admin.Controllers
 
             return View(articuloVM);
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit(ArticuloVM artiVm)
+        {
+           
+        }
         #region API CALLS
         [HttpGet]
         public IActionResult GetAll()
