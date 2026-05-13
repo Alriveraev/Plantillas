@@ -7,11 +7,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 namespace BlogCore.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    public class ArticulosController : Controller
+    public class SlidersController : Controller
     {
         private readonly IContenedorTrabajo _contenedorTrabajo;
         private readonly IWebHostEnvironment _hostingEnvironment;
-        public ArticulosController(IContenedorTrabajo contenedorTrabajo, IWebHostEnvironment hostingEnvironment)
+        public SlidersController(IContenedorTrabajo contenedorTrabajo, IWebHostEnvironment hostingEnvironment)
         {
             _contenedorTrabajo = contenedorTrabajo;
             _hostingEnvironment = hostingEnvironment;
@@ -27,18 +27,12 @@ namespace BlogCore.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            ArticuloVM articuloVM = new ArticuloVM()
-            {
-               Articulo = new BlogCoreSolution.Models.Articulo(),
-               ListaCategorias = _contenedorTrabajo.Categoria.GetListaCategorias(),
-            };
-
-            return View(articuloVM);
+            return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(ArticuloVM artiVm)
+        public IActionResult Create(Slider slider)
         {
 
             if (ModelState.IsValid) 
@@ -46,67 +40,61 @@ namespace BlogCore.Areas.Admin.Controllers
                 string rutaPrincipal = _hostingEnvironment.WebRootPath;
                 var archivos = HttpContext.Request.Form.Files;
 
-                if(artiVm.Articulo.Id == 0 && archivos.Count > 0) 
+                if(slider.Id == 0 && archivos.Count > 0) 
                 {
-                    //Nuevo articulo
+                    //Nuevo slider
                     string nombreArchivo = Guid.NewGuid().ToString();
-                    var subidas = Path.Combine(rutaPrincipal, @"imagenes\articulos");
+                    var subidas = Path.Combine(rutaPrincipal, @"imagenes\sliders");
                     var extension = Path.GetExtension(archivos[0].FileName);
                     using (var fileStreams = new FileStream(Path.Combine(subidas, nombreArchivo + extension), FileMode.Create))
                     {
                         archivos[0].CopyTo(fileStreams);
                     }
-                    artiVm.Articulo.UrlImagen = @"\imagenes\articulos\" + nombreArchivo + extension;
-                    _contenedorTrabajo.Articulo.Add(artiVm.Articulo);
+                    slider.UrlImagen = @"\imagenes\sliders\" + nombreArchivo + extension;
+                    _contenedorTrabajo.Slider.Add(slider);
                     _contenedorTrabajo.Save();
 
                     return RedirectToAction(nameof(Index));
                 } else {
-                    ModelState.AddModelError("Imagen", "Seleccione una imagen para el artículo.");
+                    ModelState.AddModelError("Imagen", "Seleccione una imagen para el slider.");
                 }
 
             }
-
-            artiVm.ListaCategorias = _contenedorTrabajo.Categoria.GetListaCategorias();
-            return View(artiVm);
+            return View();
         }
 
 
         [HttpGet]
         public IActionResult Edit(int? id)
         {
+            Slider slider = _contenedorTrabajo.Slider.Get(id.GetValueOrDefault());
 
-            ArticuloVM articuloVM = new ArticuloVM()
+           if(slider == null)
             {
-                Articulo = new BlogCoreSolution.Models.Articulo(),
-                ListaCategorias = _contenedorTrabajo.Categoria.GetListaCategorias(),
-            };
-
-            if(id != null) {
-                articuloVM.Articulo = _contenedorTrabajo.Articulo.Get(id.GetValueOrDefault());
+                return NotFound();
             }
 
-            return View(articuloVM);
+            return View(slider);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(ArticuloVM artiVm)
+        public IActionResult Edit(Slider slider)
         {
             if (ModelState.IsValid)
             {
                 string rutaPrincipal = _hostingEnvironment.WebRootPath;
                 var archivos = HttpContext.Request.Form.Files;
 
-                var articuloBd = _contenedorTrabajo.Articulo.Get(artiVm.Articulo.Id);
+                var sliderBd = _contenedorTrabajo.Slider.Get(slider.Id);
                 if (archivos.Count > 0)
                 {
-                    //Editar articulo
+                    //Editar slider
                     string nombreArchivo = Guid.NewGuid().ToString();
-                    var subidas = Path.Combine(rutaPrincipal, @"imagenes\articulos");
+                    var subidas = Path.Combine(rutaPrincipal, @"imagenes\sliders");
                     var extension = Path.GetExtension(archivos[0].FileName);
 
-                    var rutaImagen = Path.Combine(rutaPrincipal, articuloBd.UrlImagen.TrimStart('\\'));
+                    var rutaImagen = Path.Combine(rutaPrincipal, sliderBd.UrlImagen.TrimStart('\\'));
 
                     if (System.IO.File.Exists(rutaImagen))
                     {
@@ -117,25 +105,24 @@ namespace BlogCore.Areas.Admin.Controllers
                     {
                         archivos[0].CopyTo(fileStreams);
                     }
-                    artiVm.Articulo.UrlImagen = @"\imagenes\articulos\" + nombreArchivo + extension;
+                    slider.UrlImagen = @"\imagenes\sliders\" + nombreArchivo + extension;
                 } else
                 {
-                    artiVm.Articulo.UrlImagen = articuloBd.UrlImagen;
+                    slider.UrlImagen = sliderBd.UrlImagen;
                 }
 
-                _contenedorTrabajo.Articulo.Update(artiVm.Articulo);
+                _contenedorTrabajo.Slider.Update(slider);
                 _contenedorTrabajo.Save();
                 return RedirectToAction(nameof(Index));
             }
-            artiVm.ListaCategorias = _contenedorTrabajo.Categoria.GetListaCategorias();
-            return View(artiVm);
+            return View();
         }
 
         #region API CALLS
         [HttpGet]
         public IActionResult GetAll()
         {
-            var lista = _contenedorTrabajo.Articulo.GetAll(includeProperties: "Categoria");
+            var lista = _contenedorTrabajo.Slider.GetAll();
             return Json(new { data = lista });
         }
 
@@ -143,23 +130,23 @@ namespace BlogCore.Areas.Admin.Controllers
         [HttpDelete]
         public IActionResult Delete(int id) { 
 
-            var articuloBd = _contenedorTrabajo.Articulo.Get(id);
-            if (articuloBd == null)
+            var sliderBd = _contenedorTrabajo.Slider.Get(id);
+            if (sliderBd == null)
             {
-                return Json(new { success = false, message = "Error al eliminar el artículo" });
+                return Json(new { success = false, message = "Error al eliminar el slider" });
             }
 
             // Eliminar imagen del servidor
             string rutaPrincipal = _hostingEnvironment.WebRootPath;
-            var rutaImagen = Path.Combine(rutaPrincipal, articuloBd.UrlImagen.TrimStart('\\'));
+            var rutaImagen = Path.Combine(rutaPrincipal, sliderBd.UrlImagen.TrimStart('\\'));
             if (System.IO.File.Exists(rutaImagen))
             {
                 System.IO.File.Delete(rutaImagen);
             }
 
-            _contenedorTrabajo.Articulo.Remove(articuloBd);
+            _contenedorTrabajo.Slider.Remove(sliderBd);
             _contenedorTrabajo.Save();
-            return Json(new { success = true, message = "Artículo eliminado correctamente" });
+            return Json(new { success = true, message = "Slider eliminado correctamente" });
         }
 
         #endregion

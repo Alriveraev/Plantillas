@@ -14,6 +14,8 @@ namespace BlogCoreSolution.DataAccess.Data
         // Aqui iran los DbSet de las tablas que se van a crear en la base de datos
         public DbSet<Categoria> Categorias { get; set; }
         public DbSet<Articulo> Articulos { get; set; }
+
+        public DbSet<Slider> Sliders { get; set; }
     }
 }
 

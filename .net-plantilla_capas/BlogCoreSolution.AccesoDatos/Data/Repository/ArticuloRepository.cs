@@ -19,13 +19,11 @@ namespace BlogCoreSolution.DataAccess.Data.Repository
         public void Update(Articulo articulo)
         {
             var objFromDb = _db.Articulos.FirstOrDefault(s => s.Id == articulo.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.Nombre = articulo.Nombre;
-                objFromDb.Descripcion = articulo.Descripcion;
-                objFromDb.UrlImagen = articulo.UrlImagen;
-                objFromDb.CategoriaId = articulo.CategoriaId;
-            }
+
+            objFromDb.Nombre = articulo.Nombre;
+            objFromDb.Descripcion = articulo.Descripcion;
+            objFromDb.UrlImagen = articulo.UrlImagen;
+            objFromDb.CategoriaId = articulo.CategoriaId;
         }
 
     }
